@@ -1,0 +1,11 @@
+# pnpm-only settings. Lives here (not .npmrc) so npm doesn't warn about
+# unknown keys. Supported since pnpm 10.16; required in pnpm 11+.
+# https://pnpm.io/settings
+
+# Refuse to install any package version published less than 3 days ago.
+# Buys time for compromised/withdrawn releases to be caught and yanked
+# before they reach our build. Unit is MINUTES — 3 days = 4320.
+minimumReleaseAge: 4320
+
+# pnpm 10 already defaults this to true; declared explicitly for clarity.
+autoInstallPeers: true

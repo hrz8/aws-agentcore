@@ -1,0 +1,33 @@
+{
+  "name": "agentcore-runtime",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "description": "Sentec agent runtime — Strands agents packaged for AWS Bedrock AgentCore Runtime",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "pnpm@10.34.4",
+  "main": "dist/main.js",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "dev:agentcore": "agentcore dev",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/main.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "docker:build": "docker build --platform=linux/arm64 -t agentcore-runtime:dev .",
+    "docker:run": "docker run --rm -p 8080:8080 --env-file .env agentcore-runtime:dev"
+  },
+  "dependencies": {
+    "@strands-agents/sdk": "1.6.0",
+    "bedrock-agentcore": "0.2.4",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@aws/agentcore": "0.20.2",
+    "@types/node": "^24.10.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.7.2"
+  }
+}
