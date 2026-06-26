@@ -20,8 +20,10 @@
     "docker:run": "docker run --rm -p 8080:8080 --env-file .env agentcore-runtime:dev"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "0.92.0",
     "@strands-agents/sdk": "1.6.0",
     "bedrock-agentcore": "0.2.4",
+    "openai": "6.44.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
