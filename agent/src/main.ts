@@ -18,16 +18,42 @@ const app = new BedrockAgentCoreApp({
       context.log.info({ sessionId: context.sessionId }, 'invoking simple agent');
 
       for await (const event of agent.stream(request.prompt)) {
-        // Forward only token deltas to the client. The agent wraps raw model
-        // events in modelStreamUpdateEvent; tool/usage/agentResult events are
-        // dropped here — add a case if/when the client needs them.
-        if (event.type !== 'modelStreamUpdateEvent') continue;
-        const inner = event.event;
-        if (
-          inner.type === 'modelContentBlockDeltaEvent'
-          && inner.delta.type === 'textDelta'
-        ) {
-          yield { event: 'message', data: { text: inner.delta.text } };
+        // Forward three event categories to the client:
+        //   - textDelta chunks    → event: message
+        //   - tool invocations    → event: tool_call
+        //   - tool results        → event: tool_result
+        // All other lifecycle events are dropped.
+        switch (event.type) {
+          case 'modelStreamUpdateEvent': {
+            const inner = event.event;
+            if (
+              inner.type === 'modelContentBlockDeltaEvent'
+              && inner.delta.type === 'textDelta'
+            ) {
+              yield { event: 'message', data: { text: inner.delta.text } };
+            }
+            break;
+          }
+          case 'beforeToolCallEvent':
+            yield {
+              event: 'tool_call',
+              data: {
+                name: event.toolUse.name,
+                toolUseId: event.toolUse.toolUseId,
+                input: event.toolUse.input,
+              },
+            };
+            break;
+          case 'toolResultEvent':
+            yield {
+              event: 'tool_result',
+              data: {
+                toolUseId: event.result.toolUseId,
+                status: event.result.status,
+                content: event.result.content,
+              },
+            };
+            break;
         }
       }
     },
