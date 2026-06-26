@@ -10,6 +10,8 @@ function parseAgentMode(value: string | undefined): AgentMode {
 export const AGENT_MODE: AgentMode = parseAgentMode(process.env.AGENT_MODE);
 export const AGENT_PLAIN_URL = process.env.AGENT_PLAIN_URL ?? 'http://localhost:5678';
 
-// Reserved for AGENT_MODE=agentcore (wired up when the SigV4 invoker lands).
+// AGENT_MODE=agentcore — SigV4-signed call to a deployed AgentCore Runtime.
 export const AGENT_RUNTIME_ARN = process.env.AGENT_RUNTIME_ARN;
 export const AWS_REGION = process.env.AWS_REGION ?? 'us-east-1';
+// Optional endpoint qualifier; defaults to 'DEFAULT' which routes to the runtime's default endpoint.
+export const AGENT_RUNTIME_QUALIFIER = process.env.AGENT_RUNTIME_QUALIFIER;

@@ -17,6 +17,10 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@aws-crypto/sha256-js": "^5.2.0",
+    "@aws-sdk/credential-providers": "^3.1074.0",
+    "@smithy/protocol-http": "^5.5.1",
+    "@smithy/signature-v4": "^5.5.1",
     "express": "^5.2.1"
   },
   "devDependencies": {
