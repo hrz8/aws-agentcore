@@ -10,10 +10,7 @@ const invoker = createInvoker();
 router.post('/chat', async (req: Request, res: Response) => {
   // Prefer the caller's session id; otherwise mint one. The agent requires
   // this header — every conversation thread maps to one microVM upstream.
-  const sessionId =
-    (req.header('x-amzn-bedrock-agentcore-runtime-session-id') as string | undefined)
-    ?? (req.header('x-session-id') as string | undefined)
-    ?? randomUUID();
+  const sessionId = (req.header('x-session-id') as string | undefined) ?? randomUUID();
 
   // Bridge client disconnect to fetch so we don't keep the upstream stream
   // alive after the caller goes away. `res.on('close')` fires when the socket

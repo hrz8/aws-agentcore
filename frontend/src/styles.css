@@ -1,0 +1,187 @@
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #fafafa;
+  color: #111;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 1rem;
+  gap: 1rem;
+}
+
+header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+header button {
+  font-size: 0.85rem;
+  padding: 0.25rem 0.6rem;
+  background: transparent;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+}
+
+.empty em {
+  font-style: normal;
+  background: #eef;
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+}
+
+.bubble {
+  padding: 0.6rem 0.85rem;
+  border-radius: 8px;
+  max-width: 85%;
+  white-space: pre-wrap;
+}
+
+.bubble--user {
+  align-self: flex-end;
+  background: #2563eb;
+  color: white;
+}
+
+.bubble--assistant {
+  align-self: flex-start;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+}
+
+.bubble__role {
+  font-size: 0.7rem;
+  opacity: 0.6;
+  margin-bottom: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cursor {
+  display: inline-block;
+  animation: blink 1s steps(2) infinite;
+  color: #888;
+}
+
+@keyframes blink { 50% { opacity: 0; } }
+
+.tool-card {
+  align-self: flex-start;
+  margin-left: 1.5rem;
+  max-width: calc(85% - 1.5rem);
+  background: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.8rem;
+}
+
+.tool-card--calling {
+  border-color: #c7c7c7;
+  background: #f0f0f0;
+}
+
+.tool-card__head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #555;
+}
+
+.tool-card__icon { font-size: 0.85rem; }
+
+.tool-card__name {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 0.8rem;
+  color: #333;
+}
+
+.tool-card__section { margin-top: 0.4rem; }
+
+.tool-card__label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #888;
+  margin-bottom: 0.2rem;
+}
+
+.tool-card__value {
+  margin: 0;
+  padding: 0.35rem 0.5rem;
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.error {
+  background: #fee;
+  border: 1px solid #fcc;
+  color: #900;
+  padding: 0.6rem 0.85rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.input {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.input input {
+  flex: 1;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+.input button {
+  padding: 0 1.2rem;
+  font-size: 0.95rem;
+  background: #111;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.input button:disabled {
+  background: #999;
+  cursor: not-allowed;
+}

@@ -1,13 +1,18 @@
 import { promisify } from 'node:util';
+import cors from 'cors';
 import express from 'express';
 
-import { AGENT_MODE, PORT } from './config.js';
+import { AGENT_MODE, CORS_ORIGIN, PORT } from './config.js';
 import chatRouter from './routes/chat.js';
 import healthRouter from './routes/health.js';
 import { shutdown } from './shutdown.js';
 
 const app = express();
 
+app.use(cors({
+  origin: CORS_ORIGIN.includes('*') ? true : CORS_ORIGIN,
+  credentials: true,
+}));
 app.use(express.json({ limit: '1mb' }));
 app.use(healthRouter);
 app.use(chatRouter);
