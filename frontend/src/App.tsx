@@ -1,11 +1,21 @@
+import { useDefaultRenderTool, useRenderTool } from '@copilotkit/react-core/v2';
+
 import { ChatInput } from './components/ChatInput';
+import { ConvertTemperatureCard, convertTemperatureArgs } from './components/ConvertTemperatureCard';
 import { MessageList } from './components/MessageList';
+import { ToolCard } from './components/ToolCard';
 import { useAgent } from './lib/useAgent';
 
-const AGENT_URL = import.meta.env.VITE_AGENT_URL ?? '/chat';
-
 export function App(): React.ReactElement {
-  const { timeline, busy, error, send, reset } = useAgent(AGENT_URL);
+  useRenderTool({
+    name: 'convert_temperature',
+    parameters: convertTemperatureArgs,
+    render: ConvertTemperatureCard,
+  }, []);
+
+  useDefaultRenderTool({ render: ToolCard }, []);
+
+  const { timeline, busy, error, send, reset } = useAgent();
 
   return (
     <div className="app">

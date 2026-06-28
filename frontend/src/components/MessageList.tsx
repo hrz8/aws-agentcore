@@ -1,6 +1,6 @@
+import { useRenderToolCall } from '@copilotkit/react-core/v2';
 import { useLayoutEffect, useRef } from 'react';
-import type { TimelineItem } from '../lib/useAgent';
-import { ToolCard } from './ToolCard';
+import type { TimelineItem } from '../lib/timeline';
 
 interface MessageListProps {
   timeline: TimelineItem[];
@@ -10,8 +10,9 @@ interface MessageListProps {
 const STICK_THRESHOLD = 40;
 
 export function MessageList({ timeline, busy }: MessageListProps): React.ReactElement {
-    const containerRef = useRef<HTMLDivElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const wasAtBottomRef = useRef(true);
+  const renderToolCall = useRenderToolCall();
 
   useLayoutEffect(() => {
     const el = containerRef.current;
@@ -53,7 +54,11 @@ export function MessageList({ timeline, busy }: MessageListProps): React.ReactEl
             />
           );
         }
-        return <ToolCard key={item.id} item={item} />;
+        return (
+          <div key={item.id}>
+            {renderToolCall({ toolCall: item.toolCall, toolMessage: item.toolMessage })}
+          </div>
+        );
       })}
     </div>
   );

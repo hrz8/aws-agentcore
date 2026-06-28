@@ -1,19 +1,12 @@
-import { HttpAgent, type AgentSubscriber } from '@ag-ui/client';
-import { useCallback, useRef, useState } from 'react';
+import type { Message } from '@ag-ui/client';
+import { useAgent as useCopilotkitAgent, UseAgentUpdate } from '@copilotkit/react-core/v2';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
-export type TimelineItem =
-  | { kind: 'user'; id: string; content: string }
-  | { kind: 'assistant'; id: string; messageId: string; content: string }
-  | {
-      kind: 'tool';
-      id: string;
-      toolCallId: string;
-      name: string;
-      argsBuffer: string;
-      args?: unknown;
-      result?: unknown;
-      status: 'calling' | 'done';
-    };
+import { getSessionId } from './session';
+import { loadOrMintThreadId, mintThreadId } from './thread';
+import { normalizeStoredMessage, projectTimeline, type TimelineItem } from './timeline';
+
+const RUNTIME_URL = import.meta.env.VITE_AGENT_URL ?? '/copilotkit';
 
 export interface UseAgentResult {
   timeline: TimelineItem[];
@@ -23,158 +16,67 @@ export interface UseAgentResult {
   reset: () => void;
 }
 
-// Sentinel for an assistant bubble awaiting its real id from TEXT_MESSAGE_START.
-const PENDING_MESSAGE_ID = '__pending__';
-
-// AgentCore Runtime requires session id >= 33 chars; randomUUID gives 36.
-function getSessionId(): string {
-  const key = 'agentcore-session-id';
-  let id = sessionStorage.getItem(key);
-  if (!id) {
-    id = crypto.randomUUID();
-    sessionStorage.setItem(key, id);
-  }
-  return id;
+async function fetchThreadMessages(
+  threadId: string,
+  signal: AbortSignal,
+): Promise<Message[]> {
+  const res = await fetch(
+    `${RUNTIME_URL}/threads/${encodeURIComponent(threadId)}/messages`,
+    { headers: { 'x-session-id': getSessionId() }, signal },
+  );
+  if (!res.ok) return [];
+  const body = await res.json() as { messages?: unknown[] };
+  return (body.messages ?? []).map(normalizeStoredMessage) as Message[];
 }
 
-// Strands wraps tool results as `[{json}]` or `[{text}]`; unwrap for display.
-function unwrapToolResult(content: unknown): unknown {
-  if (typeof content === 'string') return content;
-  if (Array.isArray(content) && content.length > 0) {
-    const first = content[0] as { json?: unknown; text?: unknown };
-    if (first?.json !== undefined) return first.json;
-    if (first?.text !== undefined) return first.text;
-  }
-  return content;
-}
-
-export function useAgent(url: string): UseAgentResult {
-  const agentRef = useRef<HttpAgent | null>(null);
-  const [timeline, setTimeline] = useState<TimelineItem[]>([]);
-  const [busy, setBusy] = useState(false);
+export function useAgent(): UseAgentResult {
+  const { agent } = useCopilotkitAgent({
+    agentId: 'default',
+    updates: [UseAgentUpdate.OnMessagesChanged, UseAgentUpdate.OnRunStatusChanged],
+  });
   const [error, setError] = useState<string | null>(null);
+  const [threadId, setThreadId] = useState(loadOrMintThreadId);
 
-  if (!agentRef.current) {
-    agentRef.current = new HttpAgent({
-      url,
-      headers: {
-        'X-Session-Id': getSessionId(),
-      },
-    });
-  }
+  useEffect(() => {
+    agent.threadId = threadId;
+    const ac = new AbortController();
+    fetchThreadMessages(threadId, ac.signal)
+      .then(messages => {
+        if (messages.length > 0) agent.setMessages(messages);
+      })
+      .catch((err: unknown) => {
+        if (err instanceof DOMException && err.name === 'AbortError') return;
+        setError(err instanceof Error ? err.message : String(err));
+      });
+    return () => ac.abort();
+  }, [agent, threadId]);
+
+  const busy = agent.isRunning;
+  const timeline = useMemo(() => {
+    const items = projectTimeline(agent.messages);
+    const last = items.at(-1);
+    if (busy && (last === undefined || last.kind === 'user')) {
+      items.push({ kind: 'assistant', id: '__pending__', messageId: '__pending__', content: '' });
+    }
+    return items;
+  }, [agent.messages, busy]);
 
   const send = useCallback(async (content: string): Promise<void> => {
-    const agent = agentRef.current;
-    if (!agent || !content.trim()) return;
-
+    if (!content.trim() || agent.isRunning) return;
     setError(null);
-    setBusy(true);
-
-    const userId = crypto.randomUUID();
-    agent.messages = [
-      ...agent.messages,
-      { id: userId, role: 'user', content },
-    ];
-    // Pre-reserve a pending assistant bubble so the cursor shows immediately.
-    setTimeline(prev => [
-      ...prev,
-      { kind: 'user', id: userId, content },
-      { kind: 'assistant', id: crypto.randomUUID(), messageId: PENDING_MESSAGE_ID, content: '' },
-    ]);
-
-    const subscriber: AgentSubscriber = {
-      onTextMessageStartEvent: ({ event }) => {
-        setTimeline(prev => {
-          const lastIdx = prev.length - 1;
-          const last = prev[lastIdx];
-          if (last?.kind === 'assistant' && last.messageId === PENDING_MESSAGE_ID) {
-            // First text segment of the turn — adopt the placeholder.
-            return prev.map((item, i) =>
-              i === lastIdx && item.kind === 'assistant'
-                ? { ...item, messageId: event.messageId }
-                : item,
-            );
-          }
-          // Continuation after a tool — open a new bubble (split).
-          return [
-            ...prev,
-            {
-              kind: 'assistant',
-              id: crypto.randomUUID(),
-              messageId: event.messageId,
-              content: '',
-            },
-          ];
-        });
-      },
-      onTextMessageContentEvent: ({ event }) => {
-        setTimeline(prev => prev.map(item =>
-          item.kind === 'assistant' && item.messageId === event.messageId
-            ? { ...item, content: item.content + event.delta }
-            : item,
-        ));
-      },
-      onToolCallStartEvent: ({ event }) => {
-        setTimeline(prev => [
-          ...prev,
-          {
-            kind: 'tool',
-            id: crypto.randomUUID(),
-            toolCallId: event.toolCallId,
-            name: event.toolCallName,
-            argsBuffer: '',
-            status: 'calling',
-          },
-        ]);
-      },
-      onToolCallArgsEvent: ({ event }) => {
-        setTimeline(prev => prev.map(item =>
-          item.kind === 'tool' && item.toolCallId === event.toolCallId
-            ? { ...item, argsBuffer: item.argsBuffer + event.delta }
-            : item,
-        ));
-      },
-      onToolCallEndEvent: ({ event }) => {
-        setTimeline(prev => prev.map(item => {
-          if (item.kind !== 'tool' || item.toolCallId !== event.toolCallId) return item;
-          let args: unknown = item.argsBuffer;
-          try { args = JSON.parse(item.argsBuffer); } catch { /* keep raw */ }
-          return { ...item, args };
-        }));
-      },
-      onToolCallResultEvent: ({ event }) => {
-        setTimeline(prev => prev.map(item => {
-          if (item.kind !== 'tool' || item.toolCallId !== event.toolCallId) return item;
-          return { ...item, result: unwrapToolResult(event.content), status: 'done' };
-        }));
-      },
-      onRunErrorEvent: ({ event }) => {
-        setError(`${event.code ?? 'RUN_ERROR'}: ${event.message}`);
-      },
-    };
-
+    agent.addMessage({ id: crypto.randomUUID(), role: 'user', content });
     try {
-      await agent.runAgent({}, subscriber);
+      await agent.runAgent();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      // Sweep any never-adopted placeholder (tool-only turn or early error).
-      setTimeline(prev => prev.filter(item =>
-        !(item.kind === 'assistant'
-          && item.messageId === PENDING_MESSAGE_ID
-          && item.content === ''),
-      ));
-      setBusy(false);
     }
-  }, []);
+  }, [agent]);
 
   const reset = useCallback((): void => {
-    if (agentRef.current) {
-      agentRef.current.messages = [];
-    }
-    setTimeline([]);
+    agent.setMessages([]);
     setError(null);
-  }, []);
+    setThreadId(mintThreadId());
+  }, [agent]);
 
   return { timeline, busy, error, send, reset };
 }
