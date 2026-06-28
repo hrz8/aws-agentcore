@@ -126,6 +126,13 @@ header button {
   color: #333;
 }
 
+.tool-card__summary {
+  margin-left: auto;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 0.78rem;
+  color: #555;
+}
+
 .tool-card__section { margin-top: 0.4rem; }
 
 .tool-card__label {

@@ -1,11 +1,34 @@
-import type { TimelineItem } from '../lib/useAgent';
+import { useRenderToolCall } from '@copilotkit/react-core/v2';
+import { useLayoutEffect, useRef } from 'react';
+import type { TimelineItem } from '../lib/timeline';
 
 interface MessageListProps {
   timeline: TimelineItem[];
   busy: boolean;
 }
 
+const STICK_THRESHOLD = 40;
+
 export function MessageList({ timeline, busy }: MessageListProps): React.ReactElement {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const wasAtBottomRef = useRef(true);
+  const renderToolCall = useRenderToolCall();
+
+  useLayoutEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    if (wasAtBottomRef.current) {
+      el.scrollTop = el.scrollHeight;
+    }
+  }, [timeline, busy]);
+
+  function handleScroll(): void {
+    const el = containerRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    wasAtBottomRef.current = distanceFromBottom <= STICK_THRESHOLD;
+  }
+
   if (timeline.length === 0) {
     return (
       <div className="empty">
@@ -15,7 +38,7 @@ export function MessageList({ timeline, busy }: MessageListProps): React.ReactEl
   }
 
   return (
-    <div className="messages">
+    <div className="messages" ref={containerRef} onScroll={handleScroll}>
       {timeline.map((item, idx) => {
         if (item.kind === 'user') {
           return <Bubble key={item.id} role="user" content={item.content} />;
@@ -31,7 +54,11 @@ export function MessageList({ timeline, busy }: MessageListProps): React.ReactEl
             />
           );
         }
-        return <ToolCard key={item.id} item={item} />;
+        return (
+          <div key={item.id}>
+            {renderToolCall({ toolCall: item.toolCall, toolMessage: item.toolMessage })}
+          </div>
+        );
       })}
     </div>
   );
@@ -53,38 +80,6 @@ function Bubble({
         {content}
         {streaming ? <span className="cursor">▎</span> : null}
       </div>
-    </div>
-  );
-}
-
-function ToolCard({
-  item,
-}: {
-  item: Extract<TimelineItem, { kind: 'tool' }>;
-}): React.ReactElement {
-  const isDone = item.status === 'done';
-  return (
-    <div className={`tool-card tool-card--${item.status}`}>
-      <div className="tool-card__head">
-        <span className="tool-card__icon">{isDone ? '✓' : '⏳'}</span>
-        <code className="tool-card__name">{item.name}</code>
-      </div>
-      {item.args !== undefined && (
-        <Section label="args" value={item.args} />
-      )}
-      {item.result !== undefined && (
-        <Section label="result" value={item.result} />
-      )}
-    </div>
-  );
-}
-
-function Section({ label, value }: { label: string; value: unknown }): React.ReactElement {
-  const rendered = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
-  return (
-    <div className="tool-card__section">
-      <div className="tool-card__label">{label}</div>
-      <pre className="tool-card__value">{rendered}</pre>
     </div>
   );
 }

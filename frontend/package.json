@@ -17,8 +17,10 @@
   },
   "dependencies": {
     "@ag-ui/client": "0.0.57",
+    "@copilotkit/react-core": "1.61.1",
     "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react-dom": "^19.2.7",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/react": "^19.2.17",
