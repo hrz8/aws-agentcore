@@ -32,7 +32,7 @@ export class AgentCoreInvoker implements AgentInvoker {
     this.qualifier = qualifier;
   }
 
-  async invoke({ body, sessionId, signal }: InvokeParams): Promise<Response> {
+  async invoke({ body, tenantId, agentId, sessionId, signal }: InvokeParams): Promise<Response> {
     if (sessionId.length < SESSION_ID_MIN || sessionId.length > SESSION_ID_MAX) {
       throw new Error(
         `sessionId must be ${SESSION_ID_MIN}-${SESSION_ID_MAX} chars (got ${sessionId.length}). `
@@ -53,6 +53,8 @@ export class AgentCoreInvoker implements AgentInvoker {
         'host': this.host,
         'content-type': 'application/json',
         'accept': 'text/event-stream',
+        'x-tenant-id': tenantId,
+        'x-agent-id': agentId,
         'x-amzn-bedrock-agentcore-runtime-session-id': sessionId,
       },
       body: payload,

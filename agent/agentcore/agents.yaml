@@ -1,0 +1,131 @@
+# Agent catalog. Loaded + validated by YamlAgentCatalog at boot.
+#
+# Tool refs:
+#   builtin__<name>   — Strands tool from BUILTIN_TOOLS
+#   mcp__<server>     — whole MCP server from tenant.mcpServers (granular
+#                       mcp__<server>__<tool> is rejected; Strands TS can't filter)
+#
+# Tenant scope:
+#   vars        — `plain` (inline literal, dev only) | `secretmanager` (reserved)
+#   mcpServers  — connection config + auth, opt-in per agent via mcp__<server>
+#
+# Templated strings (apiKey, accessKeyId, token, header value, ...) accept
+# `{{ vars.NAME }}` blocks resolved against tenant.vars. Mid-string OK.
+# Convention: UPPER_SNAKE_CASE var names.
+
+tenants:
+  - id: demo
+    vars:
+      # `plain` — NEVER commit real keys. Production goes through `secretmanager`.
+      #
+      # OPENAI_KEY:
+      #   type: plain
+      #   value: "sk-..."
+      # ANTHROPIC_KEY:
+      #   type: plain
+      #   value: "sk-ant-..."
+      # BEDROCK_ACCESS_KEY:
+      #   type: plain
+      #   value: "AKIA..."
+      # BEDROCK_SECRET_KEY:
+      #   type: plain
+      #   value: "..."
+      # EXA_TOKEN:
+      #   type: plain
+      #   value: "..."
+      # DAPI_KEY:
+      #   type: plain
+      #   value: "..."
+      #
+      # Reserved future shape — resolver throws "not yet implemented".
+      # `jsonField` plucks a field out of a JSON secret.
+      #
+      # OPENAI_KEY:
+      #   type: secretmanager
+      #   secretId: demo/openai-api-key    # name or ARN
+      #   region: us-east-1                # optional, falls back to AWS_REGION
+      #   jsonField: apiKey                # optional
+
+    mcpServers:
+      # exa:
+      #   url: "https://mcp.exa.ai/"
+      #   auth:
+      #     kind: bearer
+      #     token: "{{ vars.EXA_TOKEN }}"
+      #
+      # salesforce:
+      #   url: "https://api.example.com/mcp"
+      #   auth:
+      #     kind: header
+      #     name: "X-API-Key"
+      #     value: "{{ vars.SALESFORCE_KEY }}"
+
+    agents:
+      - id: simple
+        description: Demo agent with temperature conversion tool
+        model:
+          provider: bedrock
+          bedrock:
+            id: global.anthropic.claude-sonnet-4-6
+            # region: us-east-1
+            # credentials omitted → AWS SDK default provider chain (in-AWS).
+            maxTokens: 4096
+            temperature: 0.7
+        systemPrompt: |
+          You are a helpful assistant. Keep replies concise and friendly.
+
+          When the user asks to convert a temperature between Celsius and Fahrenheit,
+          use the convert_temperature tool — do not compute it from memory.
+        tools:
+          - builtin__convert_temperature
+          # - mcp__exa        # attach a whole MCP server (uncomment exa above + EXA_TOKEN in vars)
+
+      # ---- Alternative provider examples (uncomment + rename to enable) ----
+      #
+      # - id: simple-openai
+      #   description: Same demo agent, OpenAI-hosted model
+      #   model:
+      #     provider: openai
+      #     openai:
+      #       id: gpt-5
+      #       apiKey: "{{ vars.OPENAI_KEY }}"
+      #       # baseUrl: https://api.openai.com/v1
+      #       maxTokens: 4096
+      #       temperature: 0.7
+      #   systemPrompt: |
+      #     You are a helpful assistant.
+      #   tools:
+      #     - builtin__convert_temperature
+      #
+      # - id: simple-anthropic
+      #   description: Same demo agent, Anthropic-hosted model
+      #   model:
+      #     provider: anthropic
+      #     anthropic:
+      #       id: claude-sonnet-4-6
+      #       apiKey: "{{ vars.ANTHROPIC_KEY }}"
+      #       maxTokens: 4096
+      #       temperature: 0.7
+      #   systemPrompt: |
+      #     You are a helpful assistant.
+      #   tools:
+      #     - builtin__convert_temperature
+      #
+      # Bedrock with explicit IAM-user creds — for runtimes outside AWS.
+      # - id: simple-bedrock-explicit
+      #   description: Bedrock with explicit IAM credentials
+      #   model:
+      #     provider: bedrock
+      #     bedrock:
+      #       id: global.anthropic.claude-sonnet-4-6
+      #       region: us-east-1
+      #       credentials:
+      #         accessKeyId: "{{ vars.BEDROCK_ACCESS_KEY }}"
+      #         secretAccessKey: "{{ vars.BEDROCK_SECRET_KEY }}"
+      #         # sessionToken: "{{ vars.BEDROCK_SESSION_TOKEN }}"   # STS
+      #       maxTokens: 4096
+      #       temperature: 0.7
+      #   systemPrompt: |
+      #     You are a helpful assistant.
+      #   tools:
+      #     - builtin__convert_temperature

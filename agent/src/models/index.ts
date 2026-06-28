@@ -1,17 +1,15 @@
 import type { Model } from '@strands-agents/sdk';
 
-import { MODEL_PROVIDER } from '../config.js';
+import type { ModelDef } from '../agents/catalog.js';
+import type { TenantVars } from '../agents/vars.js';
 import { loadAnthropicModel } from './anthropic.js';
 import { loadBedrockModel } from './bedrock.js';
 import { loadOpenAIModel } from './openai.js';
 
-export function loadModel(): Model {
-  switch (MODEL_PROVIDER) {
-    case 'bedrock':
-      return loadBedrockModel();
-    case 'openai':
-      return loadOpenAIModel();
-    case 'anthropic':
-      return loadAnthropicModel();
+export function resolveModel(def: ModelDef, vars: TenantVars): Model {
+  switch (def.provider) {
+    case 'bedrock':   return loadBedrockModel(def.bedrock, vars);
+    case 'openai':    return loadOpenAIModel(def.openai, vars);
+    case 'anthropic': return loadAnthropicModel(def.anthropic, vars);
   }
 }

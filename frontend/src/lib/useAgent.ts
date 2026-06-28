@@ -2,11 +2,15 @@ import type { Message } from '@ag-ui/client';
 import { useAgent as useCopilotkitAgent, UseAgentUpdate } from '@copilotkit/react-core/v2';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { getSessionId } from './session';
 import { loadOrMintThreadId, mintThreadId } from './thread';
 import { normalizeStoredMessage, projectTimeline, type TimelineItem } from './timeline';
 
 const RUNTIME_URL = import.meta.env.VITE_AGENT_URL ?? '/copilotkit';
+
+export interface UseAgentOptions {
+  tenantId: string;
+  agentId: string;
+}
 
 export interface UseAgentResult {
   timeline: TimelineItem[];
@@ -17,19 +21,28 @@ export interface UseAgentResult {
 }
 
 async function fetchThreadMessages(
+  tenantId: string,
+  agentId: string,
   threadId: string,
   signal: AbortSignal,
 ): Promise<Message[]> {
   const res = await fetch(
     `${RUNTIME_URL}/threads/${encodeURIComponent(threadId)}/messages`,
-    { headers: { 'x-session-id': getSessionId() }, signal },
+    {
+      headers: {
+        'x-tenant-id': tenantId,
+        'x-agent-id': agentId,
+        'x-thread-id': threadId,
+      },
+      signal,
+    },
   );
   if (!res.ok) return [];
   const body = await res.json() as { messages?: unknown[] };
   return (body.messages ?? []).map(normalizeStoredMessage) as Message[];
 }
 
-export function useAgent(): UseAgentResult {
+export function useAgent({ tenantId, agentId }: UseAgentOptions): UseAgentResult {
   const { agent } = useCopilotkitAgent({
     agentId: 'default',
     updates: [UseAgentUpdate.OnMessagesChanged, UseAgentUpdate.OnRunStatusChanged],
@@ -40,7 +53,7 @@ export function useAgent(): UseAgentResult {
   useEffect(() => {
     agent.threadId = threadId;
     const ac = new AbortController();
-    fetchThreadMessages(threadId, ac.signal)
+    fetchThreadMessages(tenantId, agentId, threadId, ac.signal)
       .then(messages => {
         if (messages.length > 0) agent.setMessages(messages);
       })
@@ -49,7 +62,7 @@ export function useAgent(): UseAgentResult {
         setError(err instanceof Error ? err.message : String(err));
       });
     return () => ac.abort();
-  }, [agent, threadId]);
+  }, [agent, tenantId, agentId, threadId]);
 
   const busy = agent.isRunning;
   const timeline = useMemo(() => {

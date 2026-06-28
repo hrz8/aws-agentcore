@@ -6,7 +6,12 @@ import { MessageList } from './components/MessageList';
 import { ToolCard } from './components/ToolCard';
 import { useAgent } from './lib/useAgent';
 
-export function App(): React.ReactElement {
+interface AppProps {
+  tenantId: string;
+  agentId: string;
+}
+
+export function App({ tenantId, agentId }: AppProps): React.ReactElement {
   useRenderTool({
     name: 'convert_temperature',
     parameters: convertTemperatureArgs,
@@ -15,7 +20,7 @@ export function App(): React.ReactElement {
 
   useDefaultRenderTool({ render: ToolCard }, []);
 
-  const { timeline, busy, error, send, reset } = useAgent();
+  const { timeline, busy, error, send, reset } = useAgent({ tenantId, agentId });
 
   return (
     <div className="app">

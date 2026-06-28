@@ -29,10 +29,7 @@ export class DemoAgentcoreStack extends Stack {
       stage,
       dockerAssetPath: agentDir,
       dockerfile: 'Dockerfile',
-      environmentVariables: {
-        MODEL_PROVIDER: 'bedrock',
-        BEDROCK_MODEL_ID: 'us.amazon.nova-lite-v1:0',
-      },
+      environmentVariables: {},
     });
   }
 }

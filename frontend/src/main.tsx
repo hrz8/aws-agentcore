@@ -3,14 +3,19 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { App } from './App';
-import { getSessionId } from './lib/session';
+import { loadOrMintThreadId } from './lib/thread';
 import './styles.css';
 
 const AGENT_URL = import.meta.env.VITE_AGENT_URL ?? '/copilotkit';
+const TENANT_ID = 'demo';
+const AGENT_ID = 'simple';
 
 function COPILOTKIT_HEADERS(): Record<string, string> {
-  const sessionId = getSessionId();
-  return { 'x-session-id': sessionId };
+  return {
+    'x-tenant-id': TENANT_ID,
+    'x-agent-id': AGENT_ID,
+    'x-thread-id': loadOrMintThreadId(),
+  };
 }
 
 const root = document.getElementById('root');
@@ -22,7 +27,7 @@ createRoot(root).render(
       runtimeUrl={AGENT_URL}
       headers={COPILOTKIT_HEADERS}
     >
-      <App />
+      <App tenantId={TENANT_ID} agentId={AGENT_ID} />
     </CopilotKitProvider>
   </StrictMode>,
 );

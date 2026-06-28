@@ -8,9 +8,19 @@ const router = Router();
 const invoker = createInvoker();
 
 router.post('/chat', async (req: Request, res: Response) => {
-  // Prefer the caller's session id; otherwise mint one. The agent requires
-  // this header — every conversation thread maps to one microVM upstream.
-  const sessionId = (req.header('x-session-id') as string | undefined) ?? randomUUID();
+  const tenantId = req.header('x-tenant-id');
+  if (!tenantId) {
+    res.status(400).json({ error: 'x-tenant-id header required' });
+    return;
+  }
+  const agentId = req.header('x-agent-id');
+  if (!agentId) {
+    res.status(400).json({ error: 'x-agent-id header required' });
+    return;
+  }
+  const threadId = req.header('x-thread-id') ?? randomUUID();
+
+  const sessionId = `${tenantId}-${agentId}-${threadId}`;
 
   // Bridge client disconnect to fetch so we don't keep the upstream stream
   // alive after the caller goes away. `res.on('close')` fires when the socket
@@ -26,6 +36,8 @@ router.post('/chat', async (req: Request, res: Response) => {
   try {
     upstream = await invoker.invoke({
       body: req.body,
+      tenantId,
+      agentId,
       sessionId,
       signal: ac.signal,
     });

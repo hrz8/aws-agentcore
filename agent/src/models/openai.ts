@@ -1,17 +1,15 @@
 import { OpenAIModel } from '@strands-agents/sdk/models/openai';
 
-import { OPENAI_API_KEY, OPENAI_BASE_URL, OPENAI_MODEL_ID } from '../config.js';
+import type { OpenAIModelDef } from '../agents/catalog.js';
+import type { TenantVars } from '../agents/vars.js';
 
-export function loadOpenAIModel(): OpenAIModel {
-  if (!OPENAI_API_KEY) {
-    throw new Error('OPENAI_API_KEY is required when MODEL_PROVIDER=openai');
-  }
+export function loadOpenAIModel(def: OpenAIModelDef, vars: TenantVars): OpenAIModel {
   return new OpenAIModel({
     api: 'chat',
-    modelId: OPENAI_MODEL_ID,
-    apiKey: OPENAI_API_KEY,
-    maxTokens: 4096,
-    temperature: 0.7,
-    ...(OPENAI_BASE_URL ? { clientConfig: { baseURL: OPENAI_BASE_URL } } : {}),
+    modelId: def.id,
+    apiKey: vars.interpolate(def.apiKey),
+    maxTokens: def.maxTokens ?? 4096,
+    temperature: def.temperature ?? 0.7,
+    ...(def.baseUrl ? { clientConfig: { baseURL: def.baseUrl } } : {}),
   });
 }

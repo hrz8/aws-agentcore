@@ -8,12 +8,18 @@ import { COPILOTKIT_UPSTREAM_URL } from '../config.js';
 const runtime = new CopilotRuntime({
   runner: new InMemoryAgentRunner(),
   agents: ({ request }) => {
-    const sessionId = request.headers.get('x-session-id') ?? randomUUID();
+    const tenantId = request.headers.get('x-tenant-id') ?? '';
+    const agentId = request.headers.get('x-agent-id') ?? '';
+    const threadId = request.headers.get('x-thread-id') ?? randomUUID();
 
     return {
       default: new HttpAgent({
         url: COPILOTKIT_UPSTREAM_URL,
-        headers: { 'x-session-id': sessionId },
+        headers: {
+          'x-tenant-id': tenantId,
+          'x-agent-id': agentId,
+          'x-thread-id': threadId,
+        },
       }),
     };
   },

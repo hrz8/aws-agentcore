@@ -30,6 +30,7 @@ ENV NODE_ENV=production \
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY package.json ./
+COPY agentcore/agents.yaml ./agentcore/agents.yaml
 
 # AgentCore Runtime contract: container listens on 0.0.0.0:8080.
 EXPOSE 8080
