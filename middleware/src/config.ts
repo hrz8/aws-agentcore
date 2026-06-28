@@ -1,5 +1,10 @@
 export const PORT = Number.parseInt(process.env.PORT ?? '8080', 10);
 
+export const CORS_ORIGIN = (process.env.CORS_ORIGIN ?? 'http://localhost:3456')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
+
 export type AgentMode = 'plain' | 'agentcore';
 
 function parseAgentMode(value: string | undefined): AgentMode {
