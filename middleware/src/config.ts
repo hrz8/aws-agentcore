@@ -20,3 +20,7 @@ export const AGENT_RUNTIME_ARN = process.env.AGENT_RUNTIME_ARN;
 export const AWS_REGION = process.env.AWS_REGION ?? 'us-east-1';
 // Optional endpoint qualifier; defaults to 'DEFAULT' which routes to the runtime's default endpoint.
 export const AGENT_RUNTIME_QUALIFIER = process.env.AGENT_RUNTIME_QUALIFIER;
+
+// CopilotKit route — loops back through our own /chat.
+export const COPILOTKIT_UPSTREAM_URL =
+  process.env.COPILOTKIT_UPSTREAM_URL ?? `http://localhost:${PORT}/chat`;
