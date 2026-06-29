@@ -13,16 +13,19 @@ importers:
     dependencies:
       '@ag-ui/aws-strands':
         specifier: 0.2.2
-        version: 0.2.2(@ag-ui/a2ui-toolkit@0.0.4)(@ag-ui/client@0.0.57)(@ag-ui/core@0.0.57)(@ag-ui/encoder@0.0.57)(@modelcontextprotocol/sdk@1.29.0(zod@4.4.3))(@strands-agents/sdk@1.6.0(@anthropic-ai/sdk@0.92.0(zod@4.4.3))(@aws-sdk/client-bedrock-agent@3.1075.0)(@aws-sdk/client-s3@3.1075.0)(@modelcontextprotocol/sdk@1.29.0(zod@4.4.3))(@opentelemetry/api@1.9.1)(@opentelemetry/resources@2.8.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-metrics@2.8.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.7.0(@opentelemetry/api@1.9.1))(@smithy/types@4.15.0)(express@5.2.1)(openai@6.44.0(ws@8.21.0)(zod@4.4.3))(zod@4.4.3))(cors@2.8.6)(express@5.2.1)
+        version: 0.2.2(@ag-ui/a2ui-toolkit@0.0.4)(@ag-ui/client@0.0.57)(@ag-ui/core@0.0.57)(@ag-ui/encoder@0.0.57)(@modelcontextprotocol/sdk@1.29.0(zod@4.4.3))(@strands-agents/sdk@1.6.0(@anthropic-ai/sdk@0.92.0(zod@4.4.3))(@aws-sdk/client-bedrock-agent-runtime@3.1075.0)(@aws-sdk/client-bedrock-agent@3.1075.0)(@aws-sdk/client-s3@3.1075.0)(@modelcontextprotocol/sdk@1.29.0(zod@4.4.3))(@opentelemetry/api@1.9.1)(@opentelemetry/resources@2.8.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-metrics@2.8.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.7.0(@opentelemetry/api@1.9.1))(@smithy/types@4.15.0)(express@5.2.1)(openai@6.44.0(ws@8.21.0)(zod@4.4.3))(zod@4.4.3))(cors@2.8.6)(express@5.2.1)
       '@ag-ui/core':
         specifier: 0.0.57
         version: 0.0.57
       '@anthropic-ai/sdk':
         specifier: 0.92.0
         version: 0.92.0(zod@4.4.3)
+      '@aws-sdk/client-bedrock-agent-runtime':
+        specifier: ^3.1075.0
+        version: 3.1075.0
       '@strands-agents/sdk':
         specifier: 1.6.0
-        version: 1.6.0(@anthropic-ai/sdk@0.92.0(zod@4.4.3))(@aws-sdk/client-bedrock-agent@3.1075.0)(@aws-sdk/client-s3@3.1075.0)(@modelcontextprotocol/sdk@1.29.0(zod@4.4.3))(@opentelemetry/api@1.9.1)(@opentelemetry/resources@2.8.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-metrics@2.8.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.7.0(@opentelemetry/api@1.9.1))(@smithy/types@4.15.0)(express@5.2.1)(openai@6.44.0(ws@8.21.0)(zod@4.4.3))(zod@4.4.3)
+        version: 1.6.0(@anthropic-ai/sdk@0.92.0(zod@4.4.3))(@aws-sdk/client-bedrock-agent-runtime@3.1075.0)(@aws-sdk/client-bedrock-agent@3.1075.0)(@aws-sdk/client-s3@3.1075.0)(@modelcontextprotocol/sdk@1.29.0(zod@4.4.3))(@opentelemetry/api@1.9.1)(@opentelemetry/resources@2.8.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-metrics@2.8.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.7.0(@opentelemetry/api@1.9.1))(@smithy/types@4.15.0)(express@5.2.1)(openai@6.44.0(ws@8.21.0)(zod@4.4.3))(zod@4.4.3)
       cors:
         specifier: ^2.8.5
         version: 2.8.6
@@ -188,6 +191,10 @@ packages:
 
   '@aws-sdk/client-appsync@3.1075.0':
     resolution: {integrity: sha512-tOkdE2i1uJYPleH51gLO3ELOoiEY1Of/XGNs3/LPyJ0lKU2zecvJl/aam+47JFh+s/UzHmWlWBiikXItye6IIQ==}
+    engines: {node: '>=20.0.0'}
+
+  '@aws-sdk/client-bedrock-agent-runtime@3.1075.0':
+    resolution: {integrity: sha512-gjXKDIadqv9u+VZQYV7b2aGSmGYrgE7A6W1x8AmCQYqYqp6LAGgul2ZXTfChqifsv+oYuE7aE2yN7DaRHKIbZA==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/client-bedrock-agent@3.1075.0':
@@ -3131,13 +3138,13 @@ snapshots:
 
   '@ag-ui/a2ui-toolkit@0.0.4': {}
 
-  '@ag-ui/aws-strands@0.2.2(@ag-ui/a2ui-toolkit@0.0.4)(@ag-ui/client@0.0.57)(@ag-ui/core@0.0.57)(@ag-ui/encoder@0.0.57)(@modelcontextprotocol/sdk@1.29.0(zod@4.4.3))(@strands-agents/sdk@1.6.0(@anthropic-ai/sdk@0.92.0(zod@4.4.3))(@aws-sdk/client-bedrock-agent@3.1075.0)(@aws-sdk/client-s3@3.1075.0)(@modelcontextprotocol/sdk@1.29.0(zod@4.4.3))(@opentelemetry/api@1.9.1)(@opentelemetry/resources@2.8.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-metrics@2.8.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.7.0(@opentelemetry/api@1.9.1))(@smithy/types@4.15.0)(express@5.2.1)(openai@6.44.0(ws@8.21.0)(zod@4.4.3))(zod@4.4.3))(cors@2.8.6)(express@5.2.1)':
+  '@ag-ui/aws-strands@0.2.2(@ag-ui/a2ui-toolkit@0.0.4)(@ag-ui/client@0.0.57)(@ag-ui/core@0.0.57)(@ag-ui/encoder@0.0.57)(@modelcontextprotocol/sdk@1.29.0(zod@4.4.3))(@strands-agents/sdk@1.6.0(@anthropic-ai/sdk@0.92.0(zod@4.4.3))(@aws-sdk/client-bedrock-agent-runtime@3.1075.0)(@aws-sdk/client-bedrock-agent@3.1075.0)(@aws-sdk/client-s3@3.1075.0)(@modelcontextprotocol/sdk@1.29.0(zod@4.4.3))(@opentelemetry/api@1.9.1)(@opentelemetry/resources@2.8.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-metrics@2.8.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.7.0(@opentelemetry/api@1.9.1))(@smithy/types@4.15.0)(express@5.2.1)(openai@6.44.0(ws@8.21.0)(zod@4.4.3))(zod@4.4.3))(cors@2.8.6)(express@5.2.1)':
     dependencies:
       '@ag-ui/a2ui-toolkit': 0.0.4
       '@ag-ui/client': 0.0.57
       '@ag-ui/core': 0.0.57
       '@ag-ui/encoder': 0.0.57
-      '@strands-agents/sdk': 1.6.0(@anthropic-ai/sdk@0.92.0(zod@4.4.3))(@aws-sdk/client-bedrock-agent@3.1075.0)(@aws-sdk/client-s3@3.1075.0)(@modelcontextprotocol/sdk@1.29.0(zod@4.4.3))(@opentelemetry/api@1.9.1)(@opentelemetry/resources@2.8.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-metrics@2.8.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.7.0(@opentelemetry/api@1.9.1))(@smithy/types@4.15.0)(express@5.2.1)(openai@6.44.0(ws@8.21.0)(zod@4.4.3))(zod@4.4.3)
+      '@strands-agents/sdk': 1.6.0(@anthropic-ai/sdk@0.92.0(zod@4.4.3))(@aws-sdk/client-bedrock-agent-runtime@3.1075.0)(@aws-sdk/client-bedrock-agent@3.1075.0)(@aws-sdk/client-s3@3.1075.0)(@modelcontextprotocol/sdk@1.29.0(zod@4.4.3))(@opentelemetry/api@1.9.1)(@opentelemetry/resources@2.8.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-metrics@2.8.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.7.0(@opentelemetry/api@1.9.1))(@smithy/types@4.15.0)(express@5.2.1)(openai@6.44.0(ws@8.21.0)(zod@4.4.3))(zod@4.4.3)
     optionalDependencies:
       '@modelcontextprotocol/sdk': 1.29.0(zod@4.4.3)
       cors: 2.8.6
@@ -3362,6 +3369,19 @@ snapshots:
       tslib: 2.8.1
 
   '@aws-sdk/client-appsync@3.1075.0':
+    dependencies:
+      '@aws-crypto/sha256-browser': 5.2.0
+      '@aws-crypto/sha256-js': 5.2.0
+      '@aws-sdk/core': 3.974.23
+      '@aws-sdk/credential-provider-node': 3.972.58
+      '@aws-sdk/types': 3.973.13
+      '@smithy/core': 3.26.0
+      '@smithy/fetch-http-handler': 5.5.2
+      '@smithy/node-http-handler': 4.8.2
+      '@smithy/types': 4.15.0
+      tslib: 2.8.1
+
+  '@aws-sdk/client-bedrock-agent-runtime@3.1075.0':
     dependencies:
       '@aws-crypto/sha256-browser': 5.2.0
       '@aws-crypto/sha256-js': 5.2.0
@@ -4620,7 +4640,7 @@ snapshots:
       '@smithy/core': 3.26.0
       tslib: 2.8.1
 
-  '@strands-agents/sdk@1.6.0(@anthropic-ai/sdk@0.92.0(zod@4.4.3))(@aws-sdk/client-bedrock-agent@3.1075.0)(@aws-sdk/client-s3@3.1075.0)(@modelcontextprotocol/sdk@1.29.0(zod@4.4.3))(@opentelemetry/api@1.9.1)(@opentelemetry/resources@2.8.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-metrics@2.8.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.7.0(@opentelemetry/api@1.9.1))(@smithy/types@4.15.0)(express@5.2.1)(openai@6.44.0(ws@8.21.0)(zod@4.4.3))(zod@4.4.3)':
+  '@strands-agents/sdk@1.6.0(@anthropic-ai/sdk@0.92.0(zod@4.4.3))(@aws-sdk/client-bedrock-agent-runtime@3.1075.0)(@aws-sdk/client-bedrock-agent@3.1075.0)(@aws-sdk/client-s3@3.1075.0)(@modelcontextprotocol/sdk@1.29.0(zod@4.4.3))(@opentelemetry/api@1.9.1)(@opentelemetry/resources@2.8.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-metrics@2.8.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.7.0(@opentelemetry/api@1.9.1))(@smithy/types@4.15.0)(express@5.2.1)(openai@6.44.0(ws@8.21.0)(zod@4.4.3))(zod@4.4.3)':
     dependencies:
       '@aws-sdk/client-bedrock-runtime': 3.1075.0
       '@modelcontextprotocol/sdk': 1.29.0(zod@4.4.3)
@@ -4632,6 +4652,7 @@ snapshots:
     optionalDependencies:
       '@anthropic-ai/sdk': 0.92.0(zod@4.4.3)
       '@aws-sdk/client-bedrock-agent': 3.1075.0
+      '@aws-sdk/client-bedrock-agent-runtime': 3.1075.0
       '@aws-sdk/client-s3': 3.1075.0
       '@opentelemetry/resources': 2.8.0(@opentelemetry/api@1.9.1)
       '@opentelemetry/sdk-metrics': 2.8.0(@opentelemetry/api@1.9.1)

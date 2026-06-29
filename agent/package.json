@@ -23,6 +23,7 @@
     "@ag-ui/aws-strands": "0.2.2",
     "@ag-ui/core": "0.0.57",
     "@anthropic-ai/sdk": "0.92.0",
+    "@aws-sdk/client-bedrock-agent-runtime": "^3.1075.0",
     "@strands-agents/sdk": "1.6.0",
     "cors": "^2.8.5",
     "express": "^5.2.1",
