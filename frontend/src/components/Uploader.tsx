@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import {
-  getIngestionJob,
+  pollIngestion,
   presignUpload,
   putToS3,
   startIngestion,
@@ -13,9 +13,6 @@ type Status =
   | { kind: 'ingesting'; jobId: string; jobStatus: IngestionJobStatus | 'STARTING' }
   | { kind: 'done'; filename: string }
   | { kind: 'error'; message: string };
-
-const POLL_INTERVAL_MS = 2_000;
-const POLL_TIMEOUT_MS = 5 * 60_000;
 
 export function Uploader(): React.ReactElement {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -83,18 +80,3 @@ function StatusLine({ status }: { status: Status }): React.ReactElement | null {
   }
 }
 
-async function pollIngestion(
-  jobId: string,
-  onUpdate: (s: IngestionJobStatus) => void,
-): Promise<IngestionJobStatus> {
-  const deadline = Date.now() + POLL_TIMEOUT_MS;
-  for (;;) {
-    if (Date.now() > deadline) throw new Error('ingestion poll timed out');
-    const info = await getIngestionJob(jobId);
-    onUpdate(info.status);
-    if (info.status === 'COMPLETE' || info.status === 'FAILED' || info.status === 'STOPPED') {
-      return info.status;
-    }
-    await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS));
-  }
-}

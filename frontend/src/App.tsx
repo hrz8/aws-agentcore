@@ -4,8 +4,10 @@ import { ChatInput } from './components/ChatInput';
 import { ConvertTemperatureCard, convertTemperatureArgs } from './components/ConvertTemperatureCard';
 import { MessageList } from './components/MessageList';
 import { SearchDocumentsCard, searchDocumentsArgs } from './components/SearchDocumentsCard';
+import { SearchWebCard, searchWebArgs } from './components/SearchWebCard';
 import { ToolCard } from './components/ToolCard';
 import { Uploader } from './components/Uploader';
+import { WebUrls } from './components/WebUrls';
 import { useAgent } from './lib/useAgent';
 
 export function App(): React.ReactElement {
@@ -21,6 +23,12 @@ export function App(): React.ReactElement {
     render: SearchDocumentsCard,
   }, []);
 
+  useRenderTool({
+    name: 'search_web',
+    parameters: searchWebArgs,
+    render: SearchWebCard,
+  }, []);
+
   useDefaultRenderTool({ render: ToolCard }, []);
 
   const { timeline, busy, error, send, reset } = useAgent();
@@ -34,6 +42,7 @@ export function App(): React.ReactElement {
           new thread
         </button>
       </header>
+      <WebUrls />
       {error && <div className="error">{error}</div>}
       <MessageList timeline={timeline} busy={busy} />
       <ChatInput busy={busy} onSend={send} />

@@ -245,3 +245,83 @@ header button {
   font-size: 0.7rem;
   color: #b00020;
 }
+
+.weburls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  background: #fafafa;
+}
+
+.weburls__row { display: flex; gap: 0.4rem; }
+
+.weburls__row input {
+  flex: 1;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.weburls__row button {
+  font-size: 0.85rem;
+  padding: 0.25rem 0.6rem;
+  background: transparent;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.weburls__row button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.weburls__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.weburls__details {
+  font-size: 0.78rem;
+  color: #555;
+}
+
+.weburls__details summary {
+  cursor: pointer;
+  user-select: none;
+  color: #2563eb;
+}
+
+.weburls__details summary:hover { text-decoration: underline; }
+
+.weburls__details[open] summary { color: #111; }
+
+.weburls__list {
+  margin: 0.4rem 0 0;
+  padding: 0 0 0 0.5rem;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.weburls__list code {
+  font-size: 0.72rem;
+  color: #555;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+}
+
+.weburls__sitemap {
+  font-size: 0.78rem;
+  color: #555;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.weburls__status { font-size: 0.78rem; color: #555; }
+.weburls__status--ok  { color: #157f3a; }
+.weburls__status--err { color: #b00020; }
