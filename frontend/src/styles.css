@@ -192,3 +192,56 @@ header button {
   background: #999;
   cursor: not-allowed;
 }
+
+.uploader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+  margin-right: 0.5rem;
+}
+
+.uploader button {
+  font-size: 0.85rem;
+  padding: 0.25rem 0.6rem;
+  background: transparent;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.uploader button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.uploader__status { font-size: 0.78rem; color: #555; }
+.uploader__status--ok  { color: #157f3a; }
+.uploader__status--err { color: #b00020; }
+
+.tool-card__body { margin-top: 0.4rem; }
+
+.citations {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.citations__link {
+  color: #2563eb;
+  text-decoration: none;
+  font-size: 0.78rem;
+}
+
+.citations__link:hover { text-decoration: underline; }
+
+.citations__score {
+  font-size: 0.7rem;
+  color: #888;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+}
+
+.citations__error {
+  font-size: 0.7rem;
+  color: #b00020;
+}
