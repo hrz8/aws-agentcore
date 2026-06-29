@@ -38,7 +38,7 @@ function buildTools(): Tool[] {
   if (KB_CONFIG.webDataSourceId) {
     tools.push(createSearchWebTool({
       kbId: KB_CONFIG.kbId,
-      webDataSourceId: KB_CONFIG.webDataSourceId,
+      agentIds: [KB_CONFIG.agentId],
     }));
   }
 

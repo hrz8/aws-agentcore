@@ -50,8 +50,10 @@ export type BedrockKnowledgeBaseProps = {
   readonly s3InclusionPrefix?: string;
   readonly embeddingConfig?: EmbeddingConfig;
   readonly chunkingConfig?: ChunkingConfig;
-  // WebCrawler data source is created only when seedUrls is non-empty.
+  // Native Bedrock WebCrawler — Bedrock manages crawling and indexing.
   readonly webCrawler?: WebCrawlerConfig;
+  // When true, creates a CUSTOM data source. Web pages are fetched and submitted at runtime via IngestKnowledgeBaseDocuments.
+  readonly customWebDataSource?: boolean;
   readonly description?: string;
 };
 
@@ -196,7 +198,18 @@ export class BedrockKnowledgeBase extends Construct {
       vectorIngestionConfiguration: { chunkingConfiguration },
     });
 
-    if (props.webCrawler && props.webCrawler.seedUrls.length > 0) {
+    if (props.webCrawler && props.customWebDataSource) {
+      throw new Error('webCrawler and customWebDataSource are mutually exclusive');
+    }
+
+    if (props.customWebDataSource) {
+      this.webDataSource = new bedrock.CfnDataSource(this, 'WebDataSource', {
+        knowledgeBaseId: this.kbId,
+        name: 'web',
+        dataSourceConfiguration: { type: 'CUSTOM' },
+        vectorIngestionConfiguration: { chunkingConfiguration },
+      });
+    } else if (props.webCrawler && props.webCrawler.seedUrls.length > 0) {
       const wc = props.webCrawler;
       this.webDataSource = new bedrock.CfnDataSource(this, 'WebDataSource', {
         knowledgeBaseId: this.kbId,

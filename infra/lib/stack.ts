@@ -41,6 +41,7 @@ export class DemoAgentcoreStack extends Stack {
       stage,
       docsBucket: this.uploadsBucket.bucket,
       s3InclusionPrefix: AGENTS_INCLUSION_PREFIX,
+      customWebDataSource: true,
     });
 
     const environmentVariables: Record<string, string> = {

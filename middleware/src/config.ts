@@ -42,6 +42,7 @@ export const COPILOTKIT_UPSTREAM_URL =
 export const KB_ID = process.env.KB_ID;
 export const KB_DOCS_BUCKET = process.env.KB_DOCS_BUCKET;
 export const KB_S3_DATA_SOURCE_ID = process.env.KB_S3_DATA_SOURCE_ID;
+export const KB_WEB_DATA_SOURCE_ID = process.env.KB_WEB_DATA_SOURCE_ID;
 
 // ---- Agent-scoped ----
 export const AGENT_ID = process.env.AGENT_ID;
@@ -53,6 +54,7 @@ const kbConfigSchema = z.object({
   kbId: z.string().min(1),
   docsBucket: z.string().min(1),
   s3DataSourceId: z.string().min(1),
+  webDataSourceId: z.string().min(1).optional(),
 });
 
 export type KbConfig = z.infer<typeof kbConfigSchema>;
@@ -75,6 +77,7 @@ function loadKbConfig(): KbConfig | null {
     kbId: KB_ID,
     docsBucket: KB_DOCS_BUCKET,
     s3DataSourceId: KB_S3_DATA_SOURCE_ID,
+    webDataSourceId: KB_WEB_DATA_SOURCE_ID || undefined,
   });
 }
 

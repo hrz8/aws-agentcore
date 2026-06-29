@@ -1,14 +1,16 @@
 import { tool } from '@strands-agents/sdk';
+import { type RetrievalFilter } from '@aws-sdk/client-bedrock-agent-runtime';
 import { z } from 'zod';
 
-import { retrieve, DATA_SOURCE_ID_METADATA_KEY } from '../utils/aws/bedrock/retrieve.js';
+import { retrieve } from '../utils/aws/bedrock/retrieve.js';
+import { AGENT_ID_METADATA_KEY } from './search-documents.js';
 
 const SearchWebInputSchema = z.object({
   query: z
     .string()
     .min(1)
     .describe(
-      'A focused, natural-language query about something that might appear on the public websites we have crawled.',
+      'A focused, natural-language query about something that might appear on the websites we have crawled for this agent.',
     ),
   maxResults: z
     .number()
@@ -34,14 +36,16 @@ export type SearchWebResult = z.infer<typeof SearchWebResultSchema>;
 
 export type CreateSearchWebToolOptions = {
   readonly kbId: string;
-  readonly webDataSourceId: string;
+  readonly agentIds: readonly string[];
 };
 
 export function createSearchWebTool(opts: CreateSearchWebToolOptions) {
+  const filter = buildAgentIdFilter(opts.agentIds);
+
   return tool({
     name: 'search_web',
     description:
-      'Search content crawled from the configured public websites for passages relevant to a query. ' +
+      'Search content crawled from the websites configured for this agent for passages relevant to a query. ' +
       'Returns the top matching passages with their source URL and relevance score. ' +
       'Use this when the user asks about something documented on the websites we have indexed. ' +
       'Cite the source URL in your answer.',
@@ -52,9 +56,7 @@ export function createSearchWebTool(opts: CreateSearchWebToolOptions) {
         kbId: opts.kbId,
         query: input.query,
         maxResults,
-        filter: {
-          equals: { key: DATA_SOURCE_ID_METADATA_KEY, value: opts.webDataSourceId },
-        },
+        filter,
       });
       return {
         results: chunks.map(c => ({
@@ -65,6 +67,13 @@ export function createSearchWebTool(opts: CreateSearchWebToolOptions) {
       };
     },
   });
+}
+
+function buildAgentIdFilter(agentIds: readonly string[]): RetrievalFilter {
+  if (agentIds.length === 1) {
+    return { equals: { key: AGENT_ID_METADATA_KEY, value: agentIds[0] } };
+  }
+  return { in: { key: AGENT_ID_METADATA_KEY, value: [...agentIds] } };
 }
 
 function hostFromUrl(url: string): string {
