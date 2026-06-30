@@ -1,4 +1,9 @@
-import { useDefaultRenderTool, useRenderTool } from '@copilotkit/react-core/v2';
+import {
+  CopilotChatConfigurationProvider,
+  useDefaultRenderTool,
+  useRenderTool,
+} from '@copilotkit/react-core/v2';
+import { useState } from 'react';
 
 import { ChatInput } from './components/ChatInput';
 import { ConvertTemperatureCard, convertTemperatureArgs } from './components/ConvertTemperatureCard';
@@ -8,9 +13,28 @@ import { SearchWebCard, searchWebArgs } from './components/SearchWebCard';
 import { ToolCard } from './components/ToolCard';
 import { Uploader } from './components/Uploader';
 import { WebUrls } from './components/WebUrls';
+import { loadOrMintThreadId, mintThreadId } from './lib/storage/thread';
 import { useAgent } from './lib/useAgent';
 
 export function App(): React.ReactElement {
+  const [threadId, setThreadId] = useState(loadOrMintThreadId);
+
+  return (
+    <CopilotChatConfigurationProvider threadId={threadId} hasExplicitThreadId>
+      <AppContent
+        threadId={threadId}
+        onResetThread={() => setThreadId(mintThreadId())}
+      />
+    </CopilotChatConfigurationProvider>
+  );
+}
+
+interface AppContentProps {
+  threadId: string;
+  onResetThread: () => void;
+}
+
+function AppContent({ threadId, onResetThread }: AppContentProps): React.ReactElement {
   useRenderTool({
     name: 'convert_temperature',
     parameters: convertTemperatureArgs,
@@ -31,7 +55,7 @@ export function App(): React.ReactElement {
 
   useDefaultRenderTool({ render: ToolCard }, []);
 
-  const { timeline, busy, error, send, reset } = useAgent();
+  const { timeline, busy, error, send, reset } = useAgent({ threadId, onResetThread });
 
   return (
     <div className="app">

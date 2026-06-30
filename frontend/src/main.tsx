@@ -3,14 +3,13 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { App } from './App';
-import { getSessionId } from './lib/session';
+import { getActorId } from './lib/storage/actor';
 import './styles.css';
 
 const AGENT_URL = import.meta.env.VITE_AGENT_URL ?? '/copilotkit';
 
 function COPILOTKIT_HEADERS(): Record<string, string> {
-  const sessionId = getSessionId();
-  return { 'x-session-id': sessionId };
+  return { 'x-actor-id': getActorId() };
 }
 
 const root = document.getElementById('root');

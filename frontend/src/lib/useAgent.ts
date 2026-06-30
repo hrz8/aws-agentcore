@@ -1,13 +1,16 @@
 import type { Message } from '@ag-ui/client';
 import { useAgent as useCopilotkitAgent, UseAgentUpdate } from '@copilotkit/react-core/v2';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { getJson, HttpError } from './http';
-import { getSessionId } from './session';
-import { loadOrMintThreadId, mintThreadId } from './thread';
 import { normalizeStoredMessage, projectTimeline, type TimelineItem } from './timeline';
 
 const RUNTIME_URL = import.meta.env.VITE_AGENT_URL ?? '/copilotkit';
+
+export interface UseAgentInput {
+  threadId: string;
+  onResetThread: () => void;
+}
 
 export interface UseAgentResult {
   timeline: TimelineItem[];
@@ -24,7 +27,7 @@ async function fetchThreadMessages(
   try {
     const body = await getJson<{ messages?: unknown[] }>(
       `${RUNTIME_URL}/threads/${encodeURIComponent(threadId)}/messages`,
-      { headers: { 'x-session-id': getSessionId() }, signal },
+      { signal },
     );
     return (body.messages ?? []).map(normalizeStoredMessage) as Message[];
   } catch (err) {
@@ -33,33 +36,38 @@ async function fetchThreadMessages(
   }
 }
 
-export function useAgent(): UseAgentResult {
+export function useAgent({ threadId, onResetThread }: UseAgentInput): UseAgentResult {
   const { agent } = useCopilotkitAgent({
     agentId: 'default',
     updates: [UseAgentUpdate.OnMessagesChanged, UseAgentUpdate.OnRunStatusChanged],
   });
   const [error, setError] = useState<string | null>(null);
-  const [threadId, setThreadId] = useState(loadOrMintThreadId);
-
-  const agentRef = useRef(agent);
-  agentRef.current = agent;
-  const loadedFor = useRef<string | null>(null);
+  // History fetched for the current threadId. `null` while loading; `[]` when the thread has
+  // no prior turns. Kept in state (not a ref) so the apply effect re-runs when it arrives.
+  const [fetchedMessages, setFetchedMessages] = useState<Message[] | null>(null);
 
   useEffect(() => {
-    agentRef.current.threadId = threadId;
-    if (loadedFor.current === threadId) return;
+    setFetchedMessages(null);
     const ac = new AbortController();
     fetchThreadMessages(threadId, ac.signal)
-      .then(messages => {
-        loadedFor.current = threadId;
-        if (messages.length > 0) agentRef.current.setMessages(messages);
-      })
+      .then(setFetchedMessages)
       .catch((err: unknown) => {
         if (err instanceof DOMException && err.name === 'AbortError') return;
         setError(err instanceof Error ? err.message : String(err));
       });
     return () => ac.abort();
   }, [threadId]);
+
+  // Apply fetched history to whichever Agent instance CopilotKit is currently exposing.
+  // CopilotKit may swap the Agent reference across StrictMode remounts / thread changes, and
+  // a setMessages on the prior instance is invisible to the new one — so we re-apply whenever
+  // the agent or fetched payload changes. The `agent.messages.length > 0` guard prevents
+  // clobbering an active conversation.
+  useEffect(() => {
+    if (!fetchedMessages || fetchedMessages.length === 0) return;
+    if (agent.messages.length > 0) return;
+    agent.setMessages(fetchedMessages);
+  }, [agent, fetchedMessages]);
 
   const busy = agent.isRunning;
   const timeline = useMemo(() => {
@@ -85,8 +93,8 @@ export function useAgent(): UseAgentResult {
   const reset = useCallback((): void => {
     agent.setMessages([]);
     setError(null);
-    setThreadId(mintThreadId());
-  }, [agent]);
+    onResetThread();
+  }, [agent, onResetThread]);
 
   return { timeline, busy, error, send, reset };
 }
