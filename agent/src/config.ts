@@ -8,6 +8,71 @@ export const PORT = Number.parseInt(process.env.PORT ?? '8080', 10);
 export const AWS_REGION = process.env.AWS_REGION ?? 'us-east-1';
 
 // ============================================================================
+// Memory
+// ============================================================================
+
+export type MemoryProvider = 'agentcore' | 'none';
+
+function parseMemoryProvider(value: string | undefined): MemoryProvider {
+  if (value === 'agentcore' || value === 'none') return value;
+  return 'agentcore';
+}
+
+export const MEMORY_PROVIDER: MemoryProvider = parseMemoryProvider(process.env.MEMORY_PROVIDER);
+
+export type MemoryStorage = 'noop';
+
+function parseMemoryStorage(value: string | undefined): MemoryStorage {
+  if (value === 'noop') return value;
+  return 'noop';
+}
+
+export const MEMORY_STORAGE: MemoryStorage = parseMemoryStorage(process.env.MEMORY_STORAGE);
+
+// ---- AgentCore-specific ----
+export const MEMORY_ID = process.env.MEMORY_ID;
+export const MEMORY_NS_FACTS = process.env.MEMORY_NS_FACTS;
+export const MEMORY_NS_PREFERENCES = process.env.MEMORY_NS_PREFERENCES;
+export const MEMORY_NS_SUMMARY = process.env.MEMORY_NS_SUMMARY;
+
+const agentCoreMemoryConfigSchema = z.object({
+  memoryId: z.string().min(1),
+  namespaceFacts: z.string().min(1),
+  namespacePreferences: z.string().min(1),
+  namespaceSummary: z.string().min(1),
+});
+
+export type AgentCoreMemoryConfig = z.infer<typeof agentCoreMemoryConfigSchema>;
+
+const AGENTCORE_MEMORY_CORE = {
+  MEMORY_ID,
+  MEMORY_NS_FACTS,
+  MEMORY_NS_PREFERENCES,
+  MEMORY_NS_SUMMARY,
+} as const;
+
+function loadAgentCoreMemoryConfig(): AgentCoreMemoryConfig | null {
+  const keys = Object.keys(AGENTCORE_MEMORY_CORE) as (keyof typeof AGENTCORE_MEMORY_CORE)[];
+  const presentCount = keys.filter(k => AGENTCORE_MEMORY_CORE[k]).length;
+  if (presentCount === 0) return null;
+  if (presentCount < keys.length) {
+    const missing = keys.filter(k => !AGENTCORE_MEMORY_CORE[k]).join(', ');
+    throw new Error(
+      `AgentCore memory config is partial; expected all-or-none. Missing: ${missing}. ` +
+      `Set all of ${keys.join(', ')}, or none.`,
+    );
+  }
+  return agentCoreMemoryConfigSchema.parse({
+    memoryId: MEMORY_ID,
+    namespaceFacts: MEMORY_NS_FACTS,
+    namespacePreferences: MEMORY_NS_PREFERENCES,
+    namespaceSummary: MEMORY_NS_SUMMARY,
+  });
+}
+
+export const AGENTCORE_MEMORY_CONFIG: AgentCoreMemoryConfig | null = loadAgentCoreMemoryConfig();
+
+// ============================================================================
 // Model provider (agent-scoped — agent factory may select per agent)
 // ============================================================================
 

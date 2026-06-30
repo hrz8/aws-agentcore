@@ -7,16 +7,57 @@ import { createInvoker } from '../agents/index.js';
 const router = Router();
 const invoker = createInvoker();
 
-router.post('/chat', async (req: Request, res: Response) => {
-  // Prefer the caller's session id; otherwise mint one. The agent requires
-  // this header — every conversation thread maps to one microVM upstream.
-  const sessionId = (req.header('x-session-id') as string | undefined) ?? randomUUID();
+// Sole place these prefixes are built; route every caller through the compose helpers so tenant scoping can't drift across call sites.
+const TENANT_SLUG = 'trinitywizards';
+const AGENT_SLUG = 'simple';
+const RUNTIME_SESSION_ID_MAX = 128;
+const RAW_ACTOR_MAX = 64;
 
-  // Bridge client disconnect to fetch so we don't keep the upstream stream
-  // alive after the caller goes away. `res.on('close')` fires when the socket
-  // closes; the writableFinished gate avoids tripping on normal completion.
-  // `req.on('close')` is wrong here — it fires when the request BODY finishes
-  // reading (right after express.json()), not when the client disconnects.
+function sanitizeIdPart(value: string, maxLength: number): string {
+  return value.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, maxLength);
+}
+
+function sanitizeActor(rawActor: string | undefined): string {
+  return rawActor ? sanitizeIdPart(rawActor, RAW_ACTOR_MAX) : 'guest';
+}
+
+// Memory actorId: `{tenant}__{actor}`. Tenant-wide so agents under the same tenant share LTM.
+function composeActorId(rawActor: string | undefined): string {
+  return `${TENANT_SLUG}__${sanitizeActor(rawActor)}`;
+}
+
+// Runtime sessionId: `{tenant}__{agent}__{actor}__{thread}`. Trailing UUID guarantees ≥33 chars and per-conversation container affinity.
+function composeRuntimeSessionId(rawActor: string | undefined, threadId: string): string {
+  const composed = `${TENANT_SLUG}__${AGENT_SLUG}__${sanitizeActor(rawActor)}__${threadId}`;
+  return composed.length > RUNTIME_SESSION_ID_MAX
+    ? composed.slice(-RUNTIME_SESSION_ID_MAX)
+    : composed;
+}
+
+function extractThreadId(body: unknown): string {
+  if (
+    body !== null
+    && typeof body === 'object'
+    && 'threadId' in body
+    && typeof (body as { threadId: unknown }).threadId === 'string'
+    && (body as { threadId: string }).threadId.length > 0
+  ) {
+    return (body as { threadId: string }).threadId;
+  }
+  return randomUUID();
+}
+
+router.post('/chat', async (req: Request, res: Response) => {
+  const rawActor = req.header('x-actor-id');
+  const actorId = composeActorId(rawActor);
+  const threadId = extractThreadId(req.body);
+  const runtimeSessionId = composeRuntimeSessionId(rawActor, threadId);
+
+  if (typeof req.body === 'object' && req.body !== null) {
+    const body = req.body as { forwardedProps?: Record<string, unknown> };
+    body.forwardedProps = { ...body.forwardedProps, actorId };
+  }
+
   const ac = new AbortController();
   res.on('close', () => {
     if (!res.writableFinished) ac.abort();
@@ -26,7 +67,7 @@ router.post('/chat', async (req: Request, res: Response) => {
   try {
     upstream = await invoker.invoke({
       body: req.body,
-      sessionId,
+      sessionId: runtimeSessionId,
       signal: ac.signal,
     });
   } catch (err) {
@@ -37,11 +78,9 @@ router.post('/chat', async (req: Request, res: Response) => {
     return;
   }
 
-  // Forward status + content-type so SSE / JSON pass through transparently.
   res.status(upstream.status);
   const contentType = upstream.headers.get('content-type');
   if (contentType) res.setHeader('content-type', contentType);
-  res.setHeader('x-session-id', sessionId);
 
   if (!upstream.body) {
     res.end();

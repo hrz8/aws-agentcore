@@ -4,7 +4,7 @@
 export interface InvokeParams {
   /** Parsed JSON body forwarded to the agent verbatim. */
   body: unknown;
-  /** AgentCore runtime session id — required header upstream. */
+  /** AgentCore Runtime session id (≥33 chars). */
   sessionId: string;
   /** Propagated from the inbound request so client disconnects cancel upstream. */
   signal?: AbortSignal;
