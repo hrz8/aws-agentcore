@@ -7,6 +7,7 @@ import * as path from 'node:path';
 import { Stack } from 'aws-cdk-lib';
 import * as iam from 'aws-cdk-lib/aws-iam';
 
+import { AgentCoreMemory } from './constructs/agentcore-memory.js';
 import { AgentcoreRuntime } from './constructs/agentcore-runtime.js';
 import { BedrockKnowledgeBase } from './constructs/bedrock-kb.js';
 import { UploadsBucket } from './constructs/uploads-bucket.js';
@@ -23,6 +24,7 @@ export class DemoAgentcoreStack extends Stack {
   readonly runtime: AgentcoreRuntime;
   readonly uploadsBucket: UploadsBucket;
   readonly kb: BedrockKnowledgeBase;
+  readonly memory: AgentCoreMemory;
 
   constructor(scope: Construct, props: DemoAgentcoreStackProps) {
     super(scope, STACK_NAME, props);
@@ -44,6 +46,8 @@ export class DemoAgentcoreStack extends Stack {
       customWebDataSource: true,
     });
 
+    this.memory = new AgentCoreMemory(this, 'Memory', { stage });
+
     const environmentVariables: Record<string, string> = {
       // ---- Agent-scoped ----
       MODEL_PROVIDER: 'bedrock',
@@ -55,6 +59,12 @@ export class DemoAgentcoreStack extends Stack {
       KB_ID: this.kb.kbId,
       KB_DOCS_BUCKET: this.uploadsBucket.bucket.bucketName,
       KB_S3_DATA_SOURCE_ID: this.kb.s3DataSource.attrDataSourceId,
+
+      // ---- AgentCore Memory ----
+      MEMORY_ID: this.memory.memory.memoryId,
+      MEMORY_NS_FACTS: this.memory.namespaceFacts,
+      MEMORY_NS_PREFERENCES: this.memory.namespacePreferences,
+      MEMORY_NS_SUMMARY: this.memory.namespaceSummary,
     };
     if (this.kb.webDataSource) {
       environmentVariables.KB_WEB_DATA_SOURCE_ID = this.kb.webDataSource.attrDataSourceId;
@@ -73,5 +83,8 @@ export class DemoAgentcoreStack extends Stack {
       actions: ['bedrock:Retrieve'],
       resources: [this.kb.kbArn],
     }));
+
+    this.memory.memory.grantWrite(this.runtime.runtime);
+    this.memory.memory.grantReadLongTermMemory(this.runtime.runtime);
   }
 }
