@@ -3,7 +3,7 @@ import { type RetrievalFilter } from '@aws-sdk/client-bedrock-agent-runtime';
 import { z } from 'zod';
 
 import { retrieve } from '../utils/aws/bedrock/retrieve.js';
-import { AGENT_ID_METADATA_KEY } from './search-documents.js';
+import { AGENT_ID_METADATA_KEY, TENANT_ID_METADATA_KEY } from './search-documents.js';
 
 const SearchWebInputSchema = z.object({
   query: z
@@ -36,11 +36,12 @@ export type SearchWebResult = z.infer<typeof SearchWebResultSchema>;
 
 export type CreateSearchWebToolOptions = {
   readonly kbId: string;
+  readonly tenantId: string;
   readonly agentIds: readonly string[];
 };
 
 export function createSearchWebTool(opts: CreateSearchWebToolOptions) {
-  const filter = buildAgentIdFilter(opts.agentIds);
+  const filter = buildWebScopeFilter(opts.tenantId, opts.agentIds);
 
   return tool({
     name: 'search_web',
@@ -69,11 +70,18 @@ export function createSearchWebTool(opts: CreateSearchWebToolOptions) {
   });
 }
 
-function buildAgentIdFilter(agentIds: readonly string[]): RetrievalFilter {
-  if (agentIds.length === 1) {
-    return { equals: { key: AGENT_ID_METADATA_KEY, value: agentIds[0] } };
-  }
-  return { in: { key: AGENT_ID_METADATA_KEY, value: [...agentIds] } };
+function buildWebScopeFilter(tenantId: string, agentIds: readonly string[]): RetrievalFilter {
+  const agentClause: RetrievalFilter =
+    agentIds.length === 1
+      ? { equals: { key: AGENT_ID_METADATA_KEY, value: agentIds[0] } }
+      : { in: { key: AGENT_ID_METADATA_KEY, value: [...agentIds] } };
+
+  return {
+    andAll: [
+      { equals: { key: TENANT_ID_METADATA_KEY, value: tenantId } },
+      agentClause,
+    ],
+  };
 }
 
 function hostFromUrl(url: string): string {

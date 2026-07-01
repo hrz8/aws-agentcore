@@ -8,8 +8,11 @@ import { useState } from 'react';
 import { ChatInput } from './components/ChatInput';
 import { ConvertTemperatureCard, convertTemperatureArgs } from './components/ConvertTemperatureCard';
 import { MessageList } from './components/MessageList';
+import { ReadSkillResourceCard, readSkillResourceArgs } from './components/ReadSkillResourceCard';
 import { SearchDocumentsCard, searchDocumentsArgs } from './components/SearchDocumentsCard';
 import { SearchWebCard, searchWebArgs } from './components/SearchWebCard';
+import { SkillsCard, skillsArgs } from './components/SkillsCard';
+import { SkillsUploader } from './components/SkillsUploader';
 import { ToolCard } from './components/ToolCard';
 import { Uploader } from './components/Uploader';
 import { WebUrls } from './components/WebUrls';
@@ -53,6 +56,18 @@ function AppContent({ threadId, onResetThread }: AppContentProps): React.ReactEl
     render: SearchWebCard,
   }, []);
 
+  useRenderTool({
+    name: 'skills',
+    parameters: skillsArgs,
+    render: SkillsCard,
+  }, []);
+
+  useRenderTool({
+    name: 'read_skill_resource',
+    parameters: readSkillResourceArgs,
+    render: ReadSkillResourceCard,
+  }, []);
+
   useDefaultRenderTool({ render: ToolCard }, []);
 
   const { timeline, busy, error, send, reset } = useAgent({ threadId, onResetThread });
@@ -62,6 +77,7 @@ function AppContent({ threadId, onResetThread }: AppContentProps): React.ReactEl
       <header>
         <h1>agent demo</h1>
         <Uploader />
+        <SkillsUploader />
         <button type="button" onClick={reset} disabled={busy}>
           new thread
         </button>

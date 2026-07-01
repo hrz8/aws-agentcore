@@ -14,7 +14,12 @@ import { UploadsBucket } from './constructs/uploads-bucket.js';
 
 const STACK_NAME = 'DemoAgentcoreStack';
 const NAME_PREFIX = 'demoagent';
-const AGENTS_INCLUSION_PREFIX = 'agents/';
+
+const KB_PREFIX = 'kb/';
+const SKILLS_PREFIX = 'skills/';
+
+const GENESIS_TENANT_ID = 'trinitywizards';
+const GENESIS_AGENT_ID = 'simple';
 
 export type DemoAgentcoreStackProps = StackProps & {
   readonly stage: Stage;
@@ -42,7 +47,7 @@ export class DemoAgentcoreStack extends Stack {
       namePrefix: NAME_PREFIX,
       stage,
       docsBucket: this.uploadsBucket.bucket,
-      s3InclusionPrefix: AGENTS_INCLUSION_PREFIX,
+      s3InclusionPrefix: KB_PREFIX,
       customWebDataSource: true,
     });
 
@@ -51,13 +56,15 @@ export class DemoAgentcoreStack extends Stack {
     const environmentVariables: Record<string, string> = {
       // ---- Agent-scoped ----
       MODEL_PROVIDER: 'bedrock',
-      BEDROCK_MODEL_ID: 'us.amazon.nova-lite-v1:0',
-      AGENT_ID: 'demo-agent',
-      KB_AGENT_S3_PREFIX_TEMPLATE: `s3://${this.uploadsBucket.bucket.bucketName}/${AGENTS_INCLUSION_PREFIX}{agentId}/`,
+      BEDROCK_MODEL_ID: 'global.anthropic.claude-sonnet-4-6',
+      GENESIS_TENANT_ID,
+      GENESIS_AGENT_ID,
+
+      // ---- Shared uploads bucket (kb/ + skills/ + future top-level dirs) ----
+      UPLOADS_BUCKET: this.uploadsBucket.bucket.bucketName,
 
       // ---- KB — global ----
       KB_ID: this.kb.kbId,
-      KB_DOCS_BUCKET: this.uploadsBucket.bucket.bucketName,
       KB_S3_DATA_SOURCE_ID: this.kb.s3DataSource.attrDataSourceId,
 
       // ---- AgentCore Memory ----
@@ -82,6 +89,22 @@ export class DemoAgentcoreStack extends Stack {
       sid: 'BedrockRetrieveOnSharedKb',
       actions: ['bedrock:Retrieve'],
       resources: [this.kb.kbArn],
+    }));
+
+    // Runtime reads skills directly from S3. KB docs go through bedrock:Retrieve
+    // so we deliberately do NOT grant kb/* to the runtime.
+    this.runtime.runtime.addToRolePolicy(new iam.PolicyStatement({
+      sid: 'S3ReadSkills',
+      actions: ['s3:GetObject'],
+      resources: [`${this.uploadsBucket.bucket.bucketArn}/${SKILLS_PREFIX}*`],
+    }));
+    this.runtime.runtime.addToRolePolicy(new iam.PolicyStatement({
+      sid: 'S3ListSkills',
+      actions: ['s3:ListBucket'],
+      resources: [this.uploadsBucket.bucket.bucketArn],
+      conditions: {
+        StringLike: { 's3:prefix': [`${SKILLS_PREFIX}*`] },
+      },
     }));
 
     this.memory.memory.grantWrite(this.runtime.runtime);

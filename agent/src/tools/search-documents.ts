@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { retrieve } from '../utils/aws/bedrock/retrieve.js';
 
+export const TENANT_ID_METADATA_KEY = 'tenant_id';
 export const AGENT_ID_METADATA_KEY = 'agent_id';
 
 const SearchDocumentsInputSchema = z.object({
@@ -40,11 +41,12 @@ export type SearchDocumentsResult = z.infer<typeof SearchDocumentsResultSchema>;
 
 export type CreateSearchDocumentsToolOptions = {
   readonly kbId: string;
+  readonly tenantId: string;
   readonly agentIds: readonly string[];
 };
 
 export function createSearchDocumentsTool(opts: CreateSearchDocumentsToolOptions) {
-  const filter = buildAgentIdFilter(opts.agentIds);
+  const filter = buildKbScopeFilter(opts.tenantId, opts.agentIds);
 
   return tool({
     name: 'search_documents',
@@ -78,11 +80,18 @@ export function createSearchDocumentsTool(opts: CreateSearchDocumentsToolOptions
   });
 }
 
-function buildAgentIdFilter(agentIds: readonly string[]): RetrievalFilter {
-  if (agentIds.length === 1) {
-    return { equals: { key: AGENT_ID_METADATA_KEY, value: agentIds[0] } };
-  }
-  return { in: { key: AGENT_ID_METADATA_KEY, value: [...agentIds] } };
+function buildKbScopeFilter(tenantId: string, agentIds: readonly string[]): RetrievalFilter {
+  const agentClause: RetrievalFilter =
+    agentIds.length === 1
+      ? { equals: { key: AGENT_ID_METADATA_KEY, value: agentIds[0] } }
+      : { in: { key: AGENT_ID_METADATA_KEY, value: [...agentIds] } };
+
+  return {
+    andAll: [
+      { equals: { key: TENANT_ID_METADATA_KEY, value: tenantId } },
+      agentClause,
+    ],
+  };
 }
 
 function basenameFromUri(uri: string): string {

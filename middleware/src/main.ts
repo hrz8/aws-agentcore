@@ -7,6 +7,7 @@ import chatRouter from './routes/chat.js';
 import copilotkitRouter from './routes/copilotkit.js';
 import healthRouter from './routes/health.js';
 import kbRouter from './routes/kb.js';
+import skillsRouter from './routes/skills.js';
 import { shutdown } from './shutdown.js';
 
 const app = express();
@@ -15,10 +16,11 @@ app.use(cors({
   origin: CORS_ORIGIN.includes('*') ? true : CORS_ORIGIN,
   credentials: true,
 }));
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({ limit: '50mb' }));
 app.use(healthRouter);
 app.use(chatRouter);
 app.use(kbRouter);
+app.use(skillsRouter);
 app.use(copilotkitRouter);
 
 const server = app.listen(PORT, () => {

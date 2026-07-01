@@ -1,5 +1,7 @@
 import { useRenderToolCall } from '@copilotkit/react-core/v2';
 import { useLayoutEffect, useRef } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import type { TimelineItem } from '../lib/timeline';
 
 interface MessageListProps {
@@ -77,7 +79,13 @@ function Bubble({
     <div className={`bubble bubble--${role}`}>
       <div className="bubble__role">{role}</div>
       <div className="bubble__content">
-        {content}
+        {role === 'assistant' ? (
+          <div className="markdown">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+          </div>
+        ) : (
+          content
+        )}
         {streaming ? <span className="cursor">▎</span> : null}
       </div>
     </div>

@@ -24,6 +24,8 @@
     "@ag-ui/core": "0.0.57",
     "@anthropic-ai/sdk": "0.92.0",
     "@aws-sdk/client-bedrock-agent-runtime": "^3.1075.0",
+    "@aws-sdk/client-s3": "^3.1075.0",
+    "@aws-sdk/s3-request-presigner": "^3.1075.0",
     "@strands-agents/sdk": "1.6.0",
     "bedrock-agentcore": "^0.3.0",
     "cors": "^2.8.5",

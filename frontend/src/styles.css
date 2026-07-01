@@ -67,6 +67,67 @@ header button {
   white-space: pre-wrap;
 }
 
+.markdown { white-space: normal; }
+.markdown > *:first-child { margin-top: 0; }
+.markdown > *:last-child { margin-bottom: 0; }
+.markdown p { margin: 0 0 0.6rem 0; }
+.markdown h1, .markdown h2, .markdown h3, .markdown h4 {
+  margin: 0.9rem 0 0.4rem;
+  line-height: 1.25;
+}
+.markdown h1 { font-size: 1.15rem; }
+.markdown h2 { font-size: 1.05rem; }
+.markdown h3 { font-size: 1rem; }
+.markdown h4 { font-size: 0.92rem; }
+.markdown ul, .markdown ol { margin: 0 0 0.6rem 0; padding-left: 1.4rem; }
+.markdown li { margin-bottom: 0.2rem; }
+.markdown li > p { margin: 0; }
+.markdown blockquote {
+  margin: 0.5rem 0;
+  padding: 0.1rem 0.8rem;
+  border-left: 3px solid #d0d0d0;
+  color: #555;
+}
+.markdown code {
+  background: #f2f2f2;
+  padding: 0.05rem 0.3rem;
+  border-radius: 3px;
+  font-size: 0.85em;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+}
+.markdown pre {
+  margin: 0.5rem 0;
+  padding: 0.6rem 0.75rem;
+  background: #f6f6f6;
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+  overflow-x: auto;
+  font-size: 0.82rem;
+}
+.markdown pre code {
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  font-size: 1em;
+}
+.markdown a { color: #2563eb; text-decoration: underline; }
+.markdown table {
+  border-collapse: collapse;
+  margin: 0.5rem 0;
+  font-size: 0.85rem;
+}
+.markdown th, .markdown td {
+  border: 1px solid #d8d8d8;
+  padding: 0.25rem 0.5rem;
+  text-align: left;
+}
+.markdown th { background: #f4f4f4; }
+.markdown hr {
+  border: none;
+  border-top: 1px solid #e0e0e0;
+  margin: 0.7rem 0;
+}
+
 .bubble--user {
   align-self: flex-end;
   background: #2563eb;
@@ -156,6 +217,40 @@ header button {
   word-break: break-word;
 }
 
+.tool-card__markdown {
+  margin: 0;
+  padding: 0.5rem 0.65rem;
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 22rem;
+  overflow-y: auto;
+}
+
+.tool-card__toggle {
+  background: transparent;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.7rem;
+  color: #555;
+  cursor: pointer;
+}
+
+.tool-card__toggle:hover {
+  background: #eee;
+}
+
+.tool-card--error {
+  border-color: #f5c6cb;
+  background: #fbecec;
+}
+
 .error {
   background: #fee;
   border: 1px solid #fcc;
@@ -215,6 +310,104 @@ header button {
 .uploader__status { font-size: 0.78rem; color: #555; }
 .uploader__status--ok  { color: #157f3a; }
 .uploader__status--err { color: #b00020; }
+
+.skills {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-right: 0.5rem;
+  position: relative;
+}
+
+.skills button {
+  font-size: 0.85rem;
+  padding: 0.25rem 0.6rem;
+  background: transparent;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.skills button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.skills__details {
+  position: relative;
+}
+
+.skills__details summary {
+  cursor: pointer;
+  font-size: 0.78rem;
+  color: #555;
+  list-style: none;
+  padding: 0.15rem 0.4rem;
+  border: 1px solid transparent;
+  border-radius: 4px;
+}
+
+.skills__details summary::-webkit-details-marker { display: none; }
+.skills__details summary:hover { border-color: #ddd; }
+.skills__details[open] summary { color: #111; border-color: #ddd; }
+
+.skills__list {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 22rem;
+  max-width: 30rem;
+  max-height: 24rem;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  padding: 0.4rem 0.5rem;
+  margin: 0;
+  list-style: none;
+  font-size: 0.82rem;
+  z-index: 10;
+}
+
+.skills__list li {
+  padding: 0.4rem 0.25rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+.skills__list li:last-child { border-bottom: none; }
+
+.skills__row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.skills__name {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 0.8rem;
+  color: #111;
+  flex: 1;
+}
+
+.skills__delete {
+  padding: 0 0.4rem;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #b00020;
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 3px;
+}
+.skills__delete:hover { background: #fee; border-color: #fcc; }
+
+.skills__desc {
+  font-size: 0.75rem;
+  color: #666;
+  margin-top: 0.15rem;
+  padding-right: 0.25rem;
+}
+
+.skills__status { font-size: 0.78rem; color: #555; }
+.skills__status--ok  { color: #157f3a; }
+.skills__status--err { color: #b00020; }
 
 .tool-card__body { margin-top: 0.4rem; }
 

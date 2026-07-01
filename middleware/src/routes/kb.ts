@@ -1,7 +1,7 @@
 import { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
 
-import { KB_CONFIG } from '../config.js';
+import { composeAgentScope, KB_CONFIG } from '../config.js';
 import {
   deleteCustomDocument,
   getIngestionJob,
@@ -27,8 +27,9 @@ const router = Router();
 if (!KB_CONFIG) {
   console.warn('[middleware] KB env not configured; /kb/* routes disabled');
 } else {
-  const { agentId, kbId, docsBucket, s3DataSourceId, webDataSourceId } = KB_CONFIG;
-  const agentPrefix = `agents/${agentId}/`;
+  const { tenantId, agentId, kbId, uploadsBucket, s3DataSourceId, webDataSourceId } = KB_CONFIG;
+  const agentScope = composeAgentScope(tenantId, agentId);
+  const kbPrefix = `kb/${agentScope}/`;
 
   const UploadBodySchema = z.object({
     filename: z.string().min(1).max(200),
@@ -47,12 +48,12 @@ if (!KB_CONFIG) {
       return;
     }
 
-    const key = `${agentPrefix}${safeFilename}`;
+    const key = `${kbPrefix}${safeFilename}`;
     const sidecarKey = `${key}.metadata.json`;
 
     const [fileUploadUrl, sidecarUploadUrl] = await Promise.all([
-      presignPutObject(docsBucket, key, parsed.data.contentType, UPLOAD_URL_TTL_SECONDS),
-      presignPutObject(docsBucket, sidecarKey, 'application/json', UPLOAD_URL_TTL_SECONDS),
+      presignPutObject(uploadsBucket, key, parsed.data.contentType, UPLOAD_URL_TTL_SECONDS),
+      presignPutObject(uploadsBucket, sidecarKey, 'application/json', UPLOAD_URL_TTL_SECONDS),
     ]);
 
     res.json({
@@ -60,7 +61,12 @@ if (!KB_CONFIG) {
       sidecarKey,
       fileUploadUrl,
       sidecarUploadUrl,
-      sidecarBody: { metadataAttributes: { agent_id: agentId } },
+      sidecarBody: {
+        metadataAttributes: {
+          tenant_id: tenantId,
+          agent_id: agentId,
+        },
+      },
       expiresIn: UPLOAD_URL_TTL_SECONDS,
     });
   });
@@ -96,9 +102,9 @@ if (!KB_CONFIG) {
       res.status(400).json({ error: 'invalid query', detail: z.treeifyError(parsed.error) });
       return;
     }
-    const allowedPrefix = `s3://${docsBucket}/${agentPrefix}`;
+    const allowedPrefix = `s3://${uploadsBucket}/${kbPrefix}`;
     if (!parsed.data.uri.startsWith(allowedPrefix)) {
-      res.status(403).json({ error: 'uri not in this agent\'s scope', allowedPrefix });
+      res.status(403).json({ error: 'uri not in this agent\'s kb scope', allowedPrefix });
       return;
     }
     const { bucket, key } = parseS3Uri(parsed.data.uri);
@@ -182,6 +188,7 @@ if (!KB_CONFIG) {
       documentId: page.contentHash,
       text: page.text,
       metadata: {
+        tenant_id: tenantId,
         agent_id: agentId,
         source_url: page.url,
         title: page.title,
