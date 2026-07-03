@@ -50,9 +50,7 @@ export type BedrockKnowledgeBaseProps = {
   readonly s3InclusionPrefix?: string;
   readonly embeddingConfig?: EmbeddingConfig;
   readonly chunkingConfig?: ChunkingConfig;
-  // Native Bedrock WebCrawler — Bedrock manages crawling and indexing.
   readonly webCrawler?: WebCrawlerConfig;
-  // When true, creates a CUSTOM data source. Web pages are fetched and submitted at runtime via IngestKnowledgeBaseDocuments.
   readonly customWebDataSource?: boolean;
   readonly description?: string;
 };
@@ -106,6 +104,15 @@ export class BedrockKnowledgeBase extends Construct {
       dataType: embedding.dataType.toLowerCase(),
       dimension: embedding.dimensions,
       distanceMetric: embedding.similarityMetric.toLowerCase(),
+      metadataConfiguration: {
+        nonFilterableMetadataKeys: [
+          'AMAZON_BEDROCK_TEXT',
+          'AMAZON_BEDROCK_METADATA',
+          'x-amz-bedrock-kb-source-uri',
+          'x-amz-bedrock-kb-chunk-id',
+          'x-amz-bedrock-kb-document-page-number',
+        ],
+      },
     });
     this.vectorIndex.addDependency(this.vectorBucket);
     this.vectorIndex.applyRemovalPolicy(isProd ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY);
@@ -172,7 +179,7 @@ export class BedrockKnowledgeBase extends Construct {
     this.knowledgeBase.addDependency(this.vectorIndex);
 
     // Bedrock validates s3vectors permissions at KB-create time; the inline
-    // policy attachment must land before the KB resource is created.
+    // policy must attach before the KB resource is created.
     const defaultPolicy = this.kbRole.node.tryFindChild('DefaultPolicy');
     if (defaultPolicy) {
       this.knowledgeBase.node.addDependency(defaultPolicy);
@@ -279,4 +286,3 @@ function renderChunkingConfiguration(
     },
   };
 }
-

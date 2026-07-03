@@ -18,16 +18,16 @@
     "deploy:prod": "cdk deploy 'Prod/*' --require-approval never",
     "diff:dev": "cdk diff 'Dev/*'"
   },
-  "devDependencies": {
-    "@types/node": "^24.10.1",
-    "aws-cdk": "2.1128.1",
-    "tsx": "^4.21.0",
-    "typescript": "~5.9.3"
-  },
   "dependencies": {
-    "aws-cdk-lib": "2.260.0",
+    "aws-cdk-lib": "catalog:",
     "constructs": "^10.5.0",
-    "dotenv": "^17.3.1",
-    "zod": "^4.3.6"
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "aws-cdk": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:"
   }
 }

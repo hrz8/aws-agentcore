@@ -1,0 +1,46 @@
+{
+  "name": "agent-runtime",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "description": "Agent runtime - Strands agents packaged",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=24"
+  },
+  "main": "dist/main.js",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "dev:agentcore": "pnpm exec agentcore dev",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/main.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "docker:build": "docker build --platform=linux/arm64 -t twai-agent-runtime:dev .",
+    "docker:run": "docker run --rm -p 8080:8080 --env-file .env twai-agent-runtime:dev"
+  },
+  "dependencies": {
+    "@repo/kit": "workspace:*",
+    "@repo/registry": "workspace:*",
+    "@repo/skills": "workspace:*",
+    "@ag-ui/aws-strands": "0.2.2",
+    "@ag-ui/core": "0.0.57",
+    "@anthropic-ai/sdk": "0.92.0",
+    "@strands-agents/sdk": "1.6.0",
+    "bedrock-agentcore": "^0.3.0",
+    "cors": "catalog:",
+    "dotenv": "catalog:",
+    "express": "catalog:",
+    "openai": "6.44.0",
+    "uuid": "catalog:",
+    "yaml": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@types/cors": "catalog:",
+    "@types/express": "catalog:",
+    "@types/node": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:"
+  }
+}

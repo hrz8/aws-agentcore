@@ -1,0 +1,88 @@
+{
+  "name": "@repo/kit",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=24"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./identity": {
+      "types": "./dist/identity/index.d.ts",
+      "default": "./dist/identity/index.js"
+    },
+    "./paths": {
+      "types": "./dist/paths/index.d.ts",
+      "default": "./dist/paths/index.js"
+    },
+    "./aws": {
+      "types": "./dist/aws/index.server.d.ts",
+      "default": "./dist/aws/index.server.js"
+    },
+    "./aws/s3": {
+      "types": "./dist/aws/s3.server.d.ts",
+      "default": "./dist/aws/s3.server.js"
+    },
+    "./aws/bedrock": {
+      "types": "./dist/aws/bedrock.server.d.ts",
+      "default": "./dist/aws/bedrock.server.js"
+    },
+    "./aws/bedrock-runtime": {
+      "types": "./dist/aws/bedrock-runtime.server.d.ts",
+      "default": "./dist/aws/bedrock-runtime.server.js"
+    },
+    "./aws/sigv4": {
+      "types": "./dist/aws/sigv4.server.d.ts",
+      "default": "./dist/aws/sigv4.server.js"
+    },
+    "./http": {
+      "types": "./dist/http.d.ts",
+      "default": "./dist/http.js"
+    },
+    "./http.server": {
+      "types": "./dist/http.server.d.ts",
+      "default": "./dist/http.server.js"
+    },
+    "./logger": {
+      "types": "./dist/logger/index.d.ts",
+      "default": "./dist/logger/index.js"
+    },
+    "./logger.server": {
+      "types": "./dist/logger.server.d.ts",
+      "default": "./dist/logger.server.js"
+    },
+    "./request-context.server": {
+      "types": "./dist/request-context.server.d.ts",
+      "default": "./dist/request-context.server.js"
+    }
+  },
+  "files": ["dist"],
+  "dependencies": {
+    "@aws-crypto/sha256-js": "catalog:",
+    "@aws-sdk/client-bedrock-agent": "catalog:",
+    "@aws-sdk/client-bedrock-agent-runtime": "catalog:",
+    "@aws-sdk/client-s3": "catalog:",
+    "@aws-sdk/credential-providers": "catalog:",
+    "@aws-sdk/s3-request-presigner": "catalog:",
+    "@smithy/protocol-http": "catalog:",
+    "@smithy/signature-v4": "catalog:",
+    "pino": "catalog:",
+    "pino-pretty": "catalog:",
+    "uuid": "catalog:"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}

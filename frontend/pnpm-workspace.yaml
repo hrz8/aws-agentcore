@@ -1,5 +1,0 @@
-# pnpm-only settings — mirrors ../agent and ../middleware.
-# https://pnpm.io/settings
-
-minimumReleaseAge: 4320 # 3 days
-autoInstallPeers: true

@@ -1,0 +1,34 @@
+{
+  "name": "twai",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TWAI Monorepo",
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "pnpm@10.34.4",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint",
+    "clean": "turbo run clean",
+    "agentcore": "pnpm --filter agent exec agentcore",
+    "cdk": "pnpm --filter infra exec cdk",
+    "dep-cruiser": "depcruise apps packages --config .dependency-cruiser.cjs",
+    "dep-cruiser:graph": "depcruise apps packages --config .dependency-cruiser.cjs --output-type dot"
+  },
+  "devDependencies": {
+    "@aws/agentcore": "0.20.2",
+    "@types/node": "catalog:",
+    "aws-cdk": "catalog:",
+    "dependency-cruiser": "^18.0.0",
+    "turbo": "^2.10.0",
+    "typescript": "catalog:"
+  },
+  "pnpm": {
+    "overrides": {
+      "@ag-ui/core": "0.0.57"
+    }
+  }
+}

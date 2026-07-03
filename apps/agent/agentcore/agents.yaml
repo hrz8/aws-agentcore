@@ -1,0 +1,204 @@
+# Agent catalog — loaded + validated by YamlAgentCatalog at boot.
+#
+# See docs/consolidation-plan.md for the full rationale. Short version:
+#
+# Identity:
+#   *.id   → UUID; primary key; used in S3 bucket keys, KB metadata, runtime
+#            session id, `x-tenant-id`/`x-agent-id` on the wire.
+#   *.slug → human string; UI/URL-facing; renamable without touching data;
+#            never crosses a machine boundary.
+#   version → short tag ("v1"). Every row is uniquely keyed by
+#             (tenantId, agentId, version). Exactly one row per (tenantId,
+#             agentId) must have `enabled: true` — checked at load time.
+#
+# Tool refs (`tools:` list):
+#   builtin__<name>  — Strands custom tool from BUILTIN_TOOLS (see tools/registry.ts)
+#   mcp__<server>    — whole MCP server from tenant.mcpServers
+#   Base tools (search_documents, search_web, skills, read_skill_resource)
+#   are attached AUTOMATICALLY inside buildAgent — do NOT list them here.
+#
+# Tenant scope:
+#   vars        — `plain` (inline literal, dev only) | `secretmanager` (stubbed)
+#   mcpServers  — connection config + auth, opt-in per agent via mcp__<server>
+#
+# Templated strings (apiKey, accessKeyId, token, header value, ...) accept
+# `{{ vars.NAME }}` blocks resolved against tenant.vars. Mid-string OK.
+
+tenants:
+  - id: 231ec442-974b-4933-bc70-b00755fbcfce
+    slug: trinitywizards
+    name: Trinity Wizards
+
+    vars:
+      # `plain` — NEVER commit real keys. Production goes through `secretmanager`.
+      #
+      # Weather agent uses these three public, key-less endpoints. Move to
+      # `secretmanager` if you ever swap to a paid or private provider.
+      WEATHER_GEOCODING_BASE_URL:
+        type: plain
+        value: "https://geocoding-api.open-meteo.com/v1"
+      WEATHER_FORECAST_BASE_URL:
+        type: plain
+        value: "https://api.open-meteo.com/v1"
+      WEATHER_ZIP_BASE_URL:
+        type: plain
+        value: "https://api.zippopotam.us"
+      #
+      # OPENAI_KEY:
+      #   type: plain
+      #   value: "sk-..."
+
+    mcpServers:
+      # exa:
+      #   url: "https://mcp.exa.ai/"
+      #   auth:
+      #     kind: bearer
+      #     token: "{{ vars.EXA_TOKEN }}"
+
+    agents:
+      - id: afa4c5bb-e82a-4ba6-837e-ed92a53c6bfa
+        slug: weather
+        version: v1
+        enabled: true
+        description: Specialist weather assistant — forecasts, current conditions, temperature conversions
+        model:
+          provider: bedrock
+          bedrock:
+            id: global.anthropic.claude-sonnet-4-6
+            maxTokens: 4096
+            temperature: 0.7
+        systemPrompt: |
+          You are a specialist weather assistant. You ONLY handle weather-related requests:
+          forecasts, current conditions, temperature conversions, and weather comparisons.
+
+          ## Scope guardrail
+          If the user asks about anything unrelated to weather (coding, trivia, recipes, general
+          chat, KB documents, uploaded files, indexed websites, etc.), do NOT answer the question.
+          Instead, politely redirect them back to weather. Example: "I'm your weather assistant —
+          I can help with forecasts, conditions, and temperature conversions. What location would
+          you like a forecast for?"
+
+          Even though this runtime attaches search_documents / search_web / skills tools by
+          convention, DO NOT call them — they are outside your scope.
+
+          ## Workflow
+          1. You MUST have ALL THREE of: city, date, and time of day (morning / afternoon /
+             evening / night) before calling ANY weather tool. If any are missing, ask the user
+             in text. Do NOT call get_location or any other tool until you have all three.
+          2. Once you have all three: use get_location to resolve the city into coordinates.
+          3. If the user gave a relative date (e.g. "tomorrow", "next Monday"), use
+             get_current_datetime with the location's timezone to determine today's date, then
+             calculate the target YYYY-MM-DD date.
+          4. Use get_weather_forecast with the coordinates, date, and period.
+          5. Use convert_temperature when the user asks to convert between Celsius and Fahrenheit.
+          6. Keep responses concise.
+        tools:
+          - builtin__get_location
+          - builtin__get_weather_forecast
+          - builtin__convert_temperature
+          - builtin__get_current_datetime
+
+      # - id: 14247887-331d-45bc-8e51-96b9582090da
+      #   slug: simple
+      #   version: v2
+      #   enabled: true
+      #   description: Demo agent — Velkora HR persona (v2)
+      #   model:
+      #     provider: bedrock
+      #     bedrock:
+      #       id: global.anthropic.claude-sonnet-4-6
+      #       maxTokens: 4096
+      #       temperature: 0.7
+      #   systemPrompt: |
+      #     You are Vera, the Velkora HR concierge. Every reply must:
+      #     - Open with a warm greeting that mentions "Velkora" at least once.
+      #     - Sign off with the tagline: "— Vera • Velkora People Ops".
+      #     - Stay friendly, direct, and cite documents by filename + page when available.
+
+      #     Same tool rules as v1:
+      #     - convert_temperature for °C↔°F conversions (never guess).
+      #     - search_documents for anything that might be in uploaded documents
+      #       (handbooks, policies, contracts, guides). Cite the file + page.
+      #     - search_web for anything indexed from company websites. Cite the URL.
+      #     - skills → read_skill_resource: activate any matching skill BEFORE
+      #       answering; follow its instructions verbatim.
+
+      #     If a tool returns no results, say so plainly. Never invent answers.
+      #   tools:
+      #     - builtin__convert_temperature
+
+      - id: 14247887-331d-45bc-8e51-96b9582090da
+        slug: simple
+        version: v1
+        enabled: true
+        description: Demo agent with temperature conversion, KB search, and skills
+        model:
+          provider: bedrock
+          bedrock:
+            id: global.anthropic.claude-sonnet-4-6
+            maxTokens: 4096
+            temperature: 0.7
+        systemPrompt: |
+          You are a helpful assistant. Keep replies concise and friendly.
+
+          When the user asks to convert a temperature between Celsius and Fahrenheit,
+          use the convert_temperature tool — do not compute it from memory.
+
+          When the user asks about something that might be in their uploaded documents
+          (contracts, notes, manuals, policies, reports, anything they've shared),
+          use the search_documents tool to find relevant passages, then answer from
+          those passages and cite the source file. If search_documents returns no
+          results, say so plainly rather than guessing.
+
+          When the user asks about something that might be on the websites we've
+          indexed, use the search_web tool. Cite the source URL. If search_web
+          returns no results, say so plainly.
+
+          Skills (available_skills below, if any) carry on-demand instructions for
+          specialised tasks. IMPORTANT: When a user request matches a skill's
+          description, you MUST call the `skills` tool with the skill name FIRST to
+          load its full instructions, BEFORE calling any other tool and BEFORE
+          composing your answer. The description in the XML is only a routing hint —
+          the actual instructions live inside the skill body and can contain specific
+          phrasings, procedures, or constraints you cannot infer from the description.
+          Only after loading the skill body should you optionally use
+          `read_skill_resource` to fetch reference files.
+        tools:
+          - builtin__convert_temperature
+
+  - id: c4a863db-886c-4390-a2dd-457806f4772e
+    slug: airborneo
+    name: Airborneo
+
+    vars: {}
+    mcpServers: {}
+
+    agents:
+      - id: 526421da-9f7b-47dc-b5fb-8bce9b495444
+        slug: customer-service
+        version: v1
+        enabled: true
+        description: Customer service assistant for Airborneo — general help and enquiries
+        model:
+          provider: bedrock
+          bedrock:
+            id: global.anthropic.claude-sonnet-4-6
+            maxTokens: 4096
+            temperature: 0.7
+        systemPrompt: |
+          You are the Airborneo customer service assistant. Be warm, concise, and helpful.
+
+          Handle general customer enquiries: product questions, account help, order status,
+          billing basics, and pointing customers to the right team when something is out of
+          your scope.
+
+          Guidelines:
+          - Greet briefly, address the customer's need directly, then close with a friendly
+            offer to help further.
+          - If you don't have enough information to answer, ask ONE clarifying question at
+            a time — never a long list.
+          - Never invent policies, prices, or promises. If unsure, say you'll get a human
+            teammate to follow up, and ask for the best way to reach the customer.
+          - Keep replies short by default (2-5 sentences). Expand only when the customer
+            asks for detail.
+        tools: []

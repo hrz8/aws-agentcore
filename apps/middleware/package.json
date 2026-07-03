@@ -1,0 +1,36 @@
+{
+  "name": "middleware",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "description": "Thin invoker in front of the AgentCore Runtime",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=24"
+  },
+  "main": "dist/main.js",
+  "scripts": {
+    "dev": "tsx watch --env-file=.env src/main.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/main.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@repo/kit": "workspace:*",
+    "@ag-ui/client": "0.0.57",
+    "@copilotkit/runtime": "1.61.1",
+    "cors": "catalog:",
+    "dotenv": "catalog:",
+    "express": "catalog:",
+    "uuid": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@types/cors": "catalog:",
+    "@types/express": "catalog:",
+    "@types/node": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:"
+  }
+}

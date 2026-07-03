@@ -1,5 +1,0 @@
-# pnpm-only settings — see ../agent/pnpm-workspace.yaml for context.
-# https://pnpm.io/settings
-
-minimumReleaseAge: 4320
-autoInstallPeers: true

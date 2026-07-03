@@ -1,0 +1,19 @@
+{
+  "name": "@repo/typescript-config",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=24"
+  },
+  "files": [
+    "base.json",
+    "node.json",
+    "react-library.json",
+    "tanstack.json"
+  ],
+  "scripts": {
+    "lint": "echo 'no lint targets' && exit 0"
+  }
+}

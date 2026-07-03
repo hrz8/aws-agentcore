@@ -1,0 +1,63 @@
+{
+  "name": "@repo/skills",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=24"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./domain": {
+      "types": "./dist/domain/index.d.ts",
+      "default": "./dist/domain/index.js"
+    },
+    "./interface": {
+      "types": "./dist/interface.d.ts",
+      "default": "./dist/interface.js"
+    },
+    "./errors": {
+      "types": "./dist/errors.d.ts",
+      "default": "./dist/errors.js"
+    },
+    "./adapters/s3": {
+      "types": "./dist/adapters/s3/index.d.ts",
+      "default": "./dist/adapters/s3/index.js"
+    },
+    "./adapters/memory": {
+      "types": "./dist/adapters/memory/index.d.ts",
+      "default": "./dist/adapters/memory/index.js"
+    },
+    "./testing": {
+      "types": "./dist/testing/contract.d.ts",
+      "default": "./dist/testing/contract.js"
+    }
+  },
+  "files": ["dist"],
+  "dependencies": {
+    "@repo/kit": "workspace:*",
+    "adm-zip": "^0.5.16",
+    "yaml": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@repo/vitest-config": "workspace:*",
+    "@types/adm-zip": "^0.5.7",
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "rm -rf dist tsconfig.tsbuildinfo",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "echo 'no lint targets' && exit 0"
+  }
+}

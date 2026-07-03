@@ -1,0 +1,32 @@
+# Used by apps/agent/Dockerfile. TODO: move to proper place
+**/node_modules
+**/dist
+**/.output
+**/.turbo
+**/*.tsbuildinfo
+**/.env
+**/.env.*
+!**/.env.example
+**/*.log
+**/coverage
+**/cdk.out
+
+.git
+.gitignore
+.gitattributes
+.claude
+.vscode
+.idea
+
+# App-local docker ignores stay applicable for context-relative paths but the
+# runtime image only needs source + package manifests copied above.
+apps/agent/agentcore/.cli
+
+# Nothing outside the runtime needs to be in the image
+apps/dashboard
+apps/frontend
+apps/middleware
+infra
+
+README.md
+docs

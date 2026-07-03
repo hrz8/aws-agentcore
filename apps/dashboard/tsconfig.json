@@ -1,0 +1,11 @@
+{
+  "extends": "@repo/typescript-config/tanstack.json",
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": [".output", ".tanstack", "node_modules"],
+  "compilerOptions": {
+    "paths": {
+      "#/*": ["./src/*"],
+      "@/*": ["./src/*"]
+    }
+  }
+}

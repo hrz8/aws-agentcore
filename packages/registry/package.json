@@ -1,0 +1,56 @@
+{
+  "name": "@repo/registry",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=24"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./domain": {
+      "types": "./dist/domain/index.d.ts",
+      "default": "./dist/domain/index.js"
+    },
+    "./interface": {
+      "types": "./dist/interface.d.ts",
+      "default": "./dist/interface.js"
+    },
+    "./errors": {
+      "types": "./dist/errors.d.ts",
+      "default": "./dist/errors.js"
+    },
+    "./s3-yaml": {
+      "types": "./dist/adapters/yaml/s3.d.ts",
+      "default": "./dist/adapters/yaml/s3.js"
+    },
+    "./postgres": {
+      "types": "./dist/adapters/database/postgres.d.ts",
+      "default": "./dist/adapters/database/postgres.js"
+    }
+  },
+  "files": ["dist"],
+  "dependencies": {
+    "@repo/kit": "workspace:*",
+    "yaml": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@repo/vitest-config": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  }
+}
