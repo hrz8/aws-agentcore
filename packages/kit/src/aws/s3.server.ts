@@ -153,14 +153,25 @@ export async function deletePrefix(
   if (objs.length === 0) {
     return 0;
   }
+  return deleteObjects(s3, bucket, objs.map((o) => o.key));
+}
+
+export async function deleteObjects(
+  s3: S3Client,
+  bucket: string,
+  keys: string[],
+): Promise<number> {
+  if (keys.length === 0) {
+    return 0;
+  }
   const BATCH = 1000;
   let deleted = 0;
-  for (let i = 0; i < objs.length; i += BATCH) {
-    const slice = objs.slice(i, i + BATCH);
+  for (let i = 0; i < keys.length; i += BATCH) {
+    const slice = keys.slice(i, i + BATCH);
     const res = await s3.send(new DeleteObjectsCommand({
       Bucket: bucket,
       Delete: {
-        Objects: slice.map((o) => ({ Key: o.key })),
+        Objects: slice.map((k) => ({ Key: k })),
         Quiet: true,
       },
     }));

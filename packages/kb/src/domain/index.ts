@@ -1,5 +1,6 @@
 export {
   IngestStatus,
+  KbDocStatus,
   type BranchOutcome,
   type DocumentSummary,
   type FileDocumentEntry,
@@ -11,6 +12,7 @@ export {
 } from './types.js';
 
 export {
+  assertS3KeyInScope,
   assertS3UriInScope,
   assertWebDocIdInScope,
 } from './scope-guards.js';

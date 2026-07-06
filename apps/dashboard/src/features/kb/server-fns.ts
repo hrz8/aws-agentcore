@@ -152,6 +152,32 @@ export const listDocumentsServerFn = createServerFn({ method: 'GET' })
     }),
   );
 
+const DeleteDocumentSchema = z.object({
+  scope: WireScopeSchema,
+  key: z.string().min(1),
+});
+
+export const deleteDocumentServerFn = createServerFn({ method: 'POST' })
+  .middleware([withContext])
+  .validator(zodInput(DeleteDocumentSchema))
+  .handler(
+    safeEnvelope(async ({ data }) => {
+      const scope = await resolveTenantScope(data.scope);
+      const repo = getKbRepo();
+      try {
+        await repo.deleteDocument(scope, data.key);
+      } catch (err) {
+        throw mapKbError(err);
+      }
+      try {
+        const ingestionJob = await repo.startIngestion(scope);
+        return { ingestionJob };
+      } catch (err) {
+        throw mapKbError(err);
+      }
+    }),
+  );
+
 const BranchKbSchema = z.object({
   scope: WireScopeSchema,
   to: z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,31}$/, 'invalid target version format'),

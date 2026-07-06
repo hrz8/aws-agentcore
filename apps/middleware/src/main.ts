@@ -6,6 +6,7 @@ import { AGENT_MODE, CORS_ORIGIN, PORT } from './config.js';
 import chatRouter from './routes/chat.js';
 import copilotkitRouter from './routes/copilotkit.js';
 import healthRouter from './routes/health.js';
+import scopeRouter from './routes/scope.js';
 import { shutdown } from './shutdown.js';
 
 const app = express();
@@ -18,6 +19,7 @@ app.use(
 );
 app.use(express.json({ limit: '50mb' }));
 app.use(healthRouter);
+app.use(scopeRouter);
 app.use(chatRouter);
 app.use(copilotkitRouter);
 

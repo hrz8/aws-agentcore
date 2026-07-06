@@ -1,3 +1,4 @@
+import { useBlocker } from '@tanstack/react-router';
 import { CheckCircle2, Globe, Loader2, Network, XCircle } from 'lucide-react';
 import * as React from 'react';
 
@@ -30,6 +31,14 @@ export function WebSeedForm() {
     }
   }, [trimmed]);
   const canSubmit = looksLikeUrl && !add.isPending;
+
+  useBlocker({
+    shouldBlockFn: () => {
+      if (!add.isPending) return false;
+      return !window.confirm(m.kb_web_leave_confirm());
+    },
+    enableBeforeUnload: () => add.isPending,
+  });
 
   function submit() {
     if (!canSubmit) {

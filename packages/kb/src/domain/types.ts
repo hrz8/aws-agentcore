@@ -8,6 +8,20 @@ export const IngestStatus = {
 } as const;
 export type IngestStatus = typeof IngestStatus[keyof typeof IngestStatus];
 
+export const KbDocStatus = {
+  Indexed: 'INDEXED',
+  PartiallyIndexed: 'PARTIALLY_INDEXED',
+  Pending: 'PENDING',
+  Starting: 'STARTING',
+  InProgress: 'IN_PROGRESS',
+  Failed: 'FAILED',
+  MetadataPartiallyIndexed: 'METADATA_PARTIALLY_INDEXED',
+  MetadataUpdateFailed: 'METADATA_UPDATE_FAILED',
+  Deleting: 'DELETING',
+  DeleteInProgress: 'DELETE_IN_PROGRESS',
+} as const;
+export type KbDocStatus = typeof KbDocStatus[keyof typeof KbDocStatus];
+
 export type IngestionJobStatistics = {
   numberOfDocumentsScanned?: number;
   numberOfMetadataDocumentsScanned?: number;
@@ -30,6 +44,9 @@ export type DocumentSummary = {
   status: string | undefined;
   statusReason?: string;
   updatedAt?: Date;
+  sourceUrl?: string;
+  title?: string;
+  fetchedAt?: string;
 };
 
 export type FileDocumentEntry = {

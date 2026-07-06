@@ -10,7 +10,11 @@ import type {
   WebDocumentInput,
 } from '../../domain/index.js';
 import { IngestStatus } from '../../domain/index.js';
-import { assertS3UriInScope, assertWebDocIdInScope } from '../../domain/scope-guards.js';
+import {
+  assertS3KeyInScope,
+  assertS3UriInScope,
+  assertWebDocIdInScope,
+} from '../../domain/scope-guards.js';
 import {
   KbConflictError,
   KbNotConfiguredError,
@@ -96,6 +100,18 @@ export class MemoryKbRepository implements KbRepository {
     }));
   }
 
+  async deleteDocument(scope: Scope, key: string): Promise<void> {
+    assertS3KeyInScope(scope, key);
+    if (key.endsWith('.metadata.json')) {
+      throw new KbValidationError('cannot delete sidecar directly');
+    }
+    const bucket = this.files.get(scopeKey(scope));
+    if (!bucket || !bucket.has(key)) {
+      throw new KbNotFoundError(`unknown document: ${key}`);
+    }
+    bucket.delete(key);
+  }
+
   async presignDownload(scope: Scope, input: PresignDownloadInput): Promise<SignedResourceUrl> {
     if (!input.uri.startsWith('s3://')) {
       throw new KbValidationError('uri must be s3://…');
@@ -134,6 +150,9 @@ export class MemoryKbRepository implements KbRepository {
       documentId,
       status: IngestStatus.Complete,
       updatedAt: new Date(),
+      sourceUrl: doc.sourceUrl,
+      title: doc.title,
+      fetchedAt: doc.fetchedAt,
     };
     const bucket = this.webDocs.get(scopeKey(scope)) ?? new Map();
     bucket.set(documentId, summary);

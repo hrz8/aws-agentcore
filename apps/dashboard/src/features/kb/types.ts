@@ -1,4 +1,4 @@
-export { IngestStatus as IngestionJobStatus } from '@repo/kb/domain';
+export { IngestStatus as IngestionJobStatus, KbDocStatus } from '@repo/kb/domain';
 export type {
   FileDocumentEntry as DocumentSummary,
   IngestionJob as IngestionJobInfo,
@@ -13,4 +13,7 @@ export type WebDocumentSummary = {
   status?: string;
   statusReason?: string;
   updatedAt?: Date | string;
+  sourceUrl?: string;
+  title?: string;
+  fetchedAt?: string;
 };

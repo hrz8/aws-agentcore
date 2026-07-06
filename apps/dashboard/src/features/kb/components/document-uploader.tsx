@@ -1,4 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
+import { useBlocker } from '@tanstack/react-router';
 import { Loader2, Upload } from 'lucide-react';
 import * as React from 'react';
 
@@ -37,6 +38,14 @@ export function DocumentUploader() {
 
   const busy =
     state.kind === UploadStateKind.Uploading || state.kind === UploadStateKind.Ingesting;
+
+  useBlocker({
+    shouldBlockFn: () => {
+      if (!busy) return false;
+      return !window.confirm(m.kb_upload_leave_confirm());
+    },
+    enableBeforeUnload: () => busy,
+  });
 
   async function runUpload(file: File) {
     setState({ kind: UploadStateKind.Uploading, filename: file.name });

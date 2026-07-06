@@ -35,6 +35,7 @@ export type BranchInput = {
 export interface KbRepository {
   presignUpload(scope: Scope, input: PresignUploadInput): Promise<PresignedUploadTicket>;
   listDocuments(scope: Scope): Promise<FileDocumentEntry[]>;
+  deleteDocument(scope: Scope, key: string): Promise<void>;
   presignDownload(scope: Scope, input: PresignDownloadInput): Promise<SignedResourceUrl>;
 
   startIngestion(scope: Scope): Promise<IngestionJob>;

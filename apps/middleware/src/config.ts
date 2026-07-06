@@ -9,6 +9,12 @@ export const AgentMode = {
 } as const;
 export type AgentMode = typeof AgentMode[keyof typeof AgentMode];
 
+export const RegistrySource = {
+  S3Yaml: 's3-yaml',
+  DbPostgres: 'db-postgres',
+} as const;
+export type RegistrySource = typeof RegistrySource[keyof typeof RegistrySource];
+
 const envSchema = z.object({
   PORT: z.union([z.string(), z.number()])
     .transform((v) => Number.parseInt(String(v), 10))
@@ -25,6 +31,11 @@ const envSchema = z.object({
   AGENT_RUNTIME_QUALIFIER: z.string().min(1).optional(),
 
   COPILOTKIT_UPSTREAM_URL: z.url().optional(),
+
+  REGISTRY_SOURCE: z.enum(RegistrySource).default(RegistrySource.S3Yaml),
+  REGISTRY_S3_KEY: z.string().min(1).default('registry.yaml'),
+  REGISTRY_DB_URL: z.string().optional(),
+  UPLOADS_BUCKET: z.string().optional(),
 }).transform((env) => ({
   ...env,
   COPILOTKIT_UPSTREAM_URL: env.COPILOTKIT_UPSTREAM_URL ?? `http://localhost:${env.PORT}/chat`,
@@ -39,4 +50,8 @@ export const {
   AGENT_RUNTIME_ARN,
   AGENT_RUNTIME_QUALIFIER,
   COPILOTKIT_UPSTREAM_URL,
+  REGISTRY_SOURCE,
+  REGISTRY_S3_KEY,
+  REGISTRY_DB_URL,
+  UPLOADS_BUCKET,
 } = Object.freeze(envSchema.parse(process.env));

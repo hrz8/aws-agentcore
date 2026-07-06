@@ -9,6 +9,13 @@ export function assertS3UriInScope(bucket: string, scope: Scope, uri: string): v
   }
 }
 
+export function assertS3KeyInScope(scope: Scope, key: string): void {
+  const allowedPrefix = `kb/${scope.tenantId}/${scope.agentId}/${scope.version}/`;
+  if (!key.startsWith(allowedPrefix)) {
+    throw new KbScopeError('key not in this scope');
+  }
+}
+
 export function assertWebDocIdInScope(scope: Scope, docId: string): void {
   const prefix = `${scope.tenantId}__${scope.agentId}__${scope.version}__`;
   if (!docId.startsWith(prefix)) {

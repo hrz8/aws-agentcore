@@ -8,6 +8,14 @@ export function webDocIdPrefix(scope: Scope): string {
   return `${scope.tenantId}__${scope.agentId}__${scope.version}__`;
 }
 
+export function webManifestPrefix(scope: Scope): string {
+  return `${kbPrefixFor(scope)}web-manifest/`;
+}
+
+export function webManifestKey(scope: Scope, docId: string): string {
+  return `${webManifestPrefix(scope)}${docId}.json`;
+}
+
 export function composeWebDocId(scope: Scope, contentHash: string): string {
   return `${webDocIdPrefix(scope)}${contentHash}`;
 }

@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@repo/kit": "workspace:*",
+    "@repo/registry": "workspace:*",
     "@ag-ui/client": "0.0.57",
     "@copilotkit/runtime": "1.61.1",
     "cors": "catalog:",

@@ -11,11 +11,13 @@ import {
 import { kbQueries } from './queries';
 import {
   addWebUrlServerFn,
+  deleteDocumentServerFn,
+  deleteWebUrlServerFn,
   kbJobServerFn,
   presignUploadServerFn,
   startIngestionServerFn,
 } from './server-fns';
-import { IngestionJobStatus } from './types';
+import { IngestionJobStatus, KbDocStatus } from './types';
 
 const EMPTY_SCOPE: ResolvedScope = {
   tenantId: '',
@@ -32,11 +34,27 @@ export function useDocuments() {
   });
 }
 
+const WEB_URLS_POLL_MS = 3_000;
+export const WEB_DOC_PENDING_STATUSES = new Set<string>([
+  KbDocStatus.Pending,
+  KbDocStatus.Starting,
+  KbDocStatus.InProgress,
+  KbDocStatus.Deleting,
+  KbDocStatus.DeleteInProgress,
+]);
+
 export function useWebUrls() {
   const scope = useCurrentScope();
   return useQuery({
     ...kbQueries.webUrls(scope ?? EMPTY_SCOPE),
     enabled: !!scope,
+    refetchInterval: (query) => {
+      const docs = query.state.data?.documents ?? [];
+      const pending = docs.some(
+        (d) => d.status !== undefined && WEB_DOC_PENDING_STATUSES.has(d.status),
+      );
+      return pending ? WEB_URLS_POLL_MS : false;
+    },
   });
 }
 
@@ -69,6 +87,32 @@ export function useAddWebUrl() {
       callServerFn(addWebUrlServerFn, {
         scope: toWireScope(requireScope(scope)),
         ...input,
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: kbQueries.all }),
+  });
+}
+
+export function useDeleteDocument() {
+  const scope = useCurrentScope();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { key: string }) =>
+      callServerFn(deleteDocumentServerFn, {
+        scope: toWireScope(requireScope(scope)),
+        key: input.key,
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: kbQueries.all }),
+  });
+}
+
+export function useDeleteWebUrl() {
+  const scope = useCurrentScope();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { docId: string }) =>
+      callServerFn(deleteWebUrlServerFn, {
+        scope: toWireScope(requireScope(scope)),
+        docId: input.docId,
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: kbQueries.all }),
   });
