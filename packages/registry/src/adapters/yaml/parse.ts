@@ -1,5 +1,7 @@
 import {
   AgentRowSchema,
+  McpAuthKind,
+  ModelProvider,
   SlugSchema,
   UuidSchema,
   assertVarRefSyntax,
@@ -7,12 +9,18 @@ import {
   type AgentDefinition,
   type AgentIdentity,
   type AgentRow,
+  type BuiltinToolConfig,
   type McpServerConfig,
   type TenantIdentity,
   type Var,
   type VarTemplated,
 } from '../../domain/index.js';
-import { McpServerSchema, VarSchema } from '../../domain/index.js';
+import {
+  BuiltinToolConfigSchema,
+  BuiltinToolNameSchema,
+  McpServerSchema,
+  VarSchema,
+} from '../../domain/index.js';
 import { parse as parseYaml } from 'yaml';
 import { z } from 'zod';
 
@@ -27,6 +35,7 @@ export const TenantSchema = z.object({
 export type TenantRow = z.infer<typeof TenantSchema>;
 
 export const RegistryFileSchema = z.object({
+  tools: z.record(BuiltinToolNameSchema, BuiltinToolConfigSchema).nullish().transform((v) => v ?? {}),
   tenants: z.array(TenantSchema).min(1),
 });
 export type RegistryFile = z.infer<typeof RegistryFileSchema>;
@@ -39,6 +48,7 @@ export type RegistryIndexes = {
   mcpByTenantId: Map<string, Record<string, McpServerConfig>>;
   varsByTenantId: Map<string, Record<string, Var>>;
   tenantsById: Map<string, TenantIdentity>;
+  builtinTools: Record<string, BuiltinToolConfig>;
 };
 
 export type ParseOptions = {
@@ -104,6 +114,7 @@ function buildIndexes(file: RegistryFile, opts: ParseOptions): RegistryIndexes {
     mcpByTenantId: new Map(),
     varsByTenantId: new Map(),
     tenantsById: new Map(),
+    builtinTools: file.tools,
   };
 
   const tenantIds = new Set<string>();
@@ -259,19 +270,19 @@ function assertModelVarRefsResolvable(
     assertTemplateResolvable(value, tenantVars, `agent ${agentKey}: model.${field}`);
   };
   switch (model.provider) {
-    case 'bedrock': {
+    case ModelProvider.Bedrock: {
       const c = model.bedrock.credentials;
       if (c) {
-        check(c.accessKeyId,     'bedrock.credentials.accessKeyId');
+        check(c.accessKeyId, 'bedrock.credentials.accessKeyId');
         check(c.secretAccessKey, 'bedrock.credentials.secretAccessKey');
-        check(c.sessionToken,    'bedrock.credentials.sessionToken');
+        check(c.sessionToken, 'bedrock.credentials.sessionToken');
       }
       return;
     }
-    case 'openai':
+    case ModelProvider.OpenAI:
       check(model.openai.apiKey, 'openai.apiKey');
       return;
-    case 'anthropic':
+    case ModelProvider.Anthropic:
       check(model.anthropic.apiKey, 'anthropic.apiKey');
       return;
   }
@@ -287,7 +298,7 @@ function assertMcpVarRefsResolvable(
       continue;
     }
     const loc = `tenant ${tenantId}: mcpServers.${serverName}.auth`;
-    if (server.auth.kind === 'bearer') {
+    if (server.auth.kind === McpAuthKind.Bearer) {
       assertTemplateResolvable(server.auth.token, tenantVars, `${loc}.token`);
     } else {
       assertTemplateResolvable(server.auth.value, tenantVars, `${loc}.value`);

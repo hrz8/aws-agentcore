@@ -8,15 +8,21 @@ export { TryOutButton } from './components/try-out-button';
 export { VersionList } from './components/version-list';
 export { VersionSelector } from './components/version-selector';
 export {
-  useAgentTools,
+  useAgentDetails,
   useAgentVersions,
   useAgents,
+  useBuiltinTools,
   useCurrentScope,
   useCurrentTenant,
   useRegistry,
   useSaveRegistry,
   useTenants,
+  useUpdateAgentConfig,
+  type AgentConfigPatch,
 } from './hooks';
 export { agentsQueries } from './queries';
 export type { AgentIdentity, RegistryYaml } from './types';
+export { GeneralEditor } from './components/general-editor';
+export { ModelEditor } from './components/model-editor';
+export { SystemPromptEditor } from './components/system-prompt-editor';
 export type { ResolvedScope } from '#/shared/scope';

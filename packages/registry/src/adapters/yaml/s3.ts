@@ -10,6 +10,7 @@ import { RegistryValidationError } from '../../errors.js';
 import type { RawTextEditable, RegistryRepository } from '../../interface.js';
 
 import { S3YamlAgentRepo } from './agents.js';
+import { S3YamlBuiltinToolRepo } from './builtin-tools.js';
 import { S3YamlMcpServerRepo } from './mcp.js';
 import {
   parseRegistryYaml,
@@ -46,6 +47,7 @@ export class S3YamlRegistryRepository implements RegistryRepository {
   readonly agents: S3YamlAgentRepo;
   readonly mcpServers: S3YamlMcpServerRepo;
   readonly vars: S3YamlVarRepo;
+  readonly builtinTools: S3YamlBuiltinToolRepo;
   readonly rawText: RawTextEditable;
 
   constructor(opts: S3YamlRegistryRepositoryOptions) {
@@ -68,10 +70,12 @@ export class S3YamlRegistryRepository implements RegistryRepository {
     this.tenants = new S3YamlTenantRepo(getIndex);
     this.mcpServers = new S3YamlMcpServerRepo(getIndex);
     this.vars = new S3YamlVarRepo(getIndex);
+    this.builtinTools = new S3YamlBuiltinToolRepo(getIndex);
     this.agents = new S3YamlAgentRepo({
       getIndex,
       readRaw: () => this.readRaw(),
       writeRaw: (text) => this.writeRaw(text),
+      validate: (text) => validateRegistryText(text, this.parseOpts),
     });
 
     this.rawText = {

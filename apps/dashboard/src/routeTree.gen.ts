@@ -18,7 +18,10 @@ import { Route as OOrgSlugAgentsAgentIdIndexRouteImport } from './routes/o/$orgS
 import { Route as OOrgSlugAgentsAgentIdVersionsRouteImport } from './routes/o/$orgSlug/agents/$agentId/versions'
 import { Route as OOrgSlugAgentsAgentIdToolsRouteImport } from './routes/o/$orgSlug/agents/$agentId/tools'
 import { Route as OOrgSlugAgentsAgentIdSkillsRouteImport } from './routes/o/$orgSlug/agents/$agentId/skills'
+import { Route as OOrgSlugAgentsAgentIdPromptRouteImport } from './routes/o/$orgSlug/agents/$agentId/prompt'
+import { Route as OOrgSlugAgentsAgentIdModelRouteImport } from './routes/o/$orgSlug/agents/$agentId/model'
 import { Route as OOrgSlugAgentsAgentIdKnowledgeBasesRouteImport } from './routes/o/$orgSlug/agents/$agentId/knowledge-bases'
+import { Route as OOrgSlugAgentsAgentIdGeneralRouteImport } from './routes/o/$orgSlug/agents/$agentId/general'
 import { Route as OOrgSlugAgentsAgentIdKnowledgeBasesIndexRouteImport } from './routes/o/$orgSlug/agents/$agentId/knowledge-bases/index'
 import { Route as OOrgSlugAgentsAgentIdKnowledgeBasesWebRouteImport } from './routes/o/$orgSlug/agents/$agentId/knowledge-bases/web'
 import { Route as OOrgSlugAgentsAgentIdKnowledgeBasesDocumentsRouteImport } from './routes/o/$orgSlug/agents/$agentId/knowledge-bases/documents'
@@ -72,10 +75,28 @@ const OOrgSlugAgentsAgentIdSkillsRoute =
     path: '/skills',
     getParentRoute: () => OOrgSlugAgentsAgentIdRoute,
   } as any)
+const OOrgSlugAgentsAgentIdPromptRoute =
+  OOrgSlugAgentsAgentIdPromptRouteImport.update({
+    id: '/prompt',
+    path: '/prompt',
+    getParentRoute: () => OOrgSlugAgentsAgentIdRoute,
+  } as any)
+const OOrgSlugAgentsAgentIdModelRoute =
+  OOrgSlugAgentsAgentIdModelRouteImport.update({
+    id: '/model',
+    path: '/model',
+    getParentRoute: () => OOrgSlugAgentsAgentIdRoute,
+  } as any)
 const OOrgSlugAgentsAgentIdKnowledgeBasesRoute =
   OOrgSlugAgentsAgentIdKnowledgeBasesRouteImport.update({
     id: '/knowledge-bases',
     path: '/knowledge-bases',
+    getParentRoute: () => OOrgSlugAgentsAgentIdRoute,
+  } as any)
+const OOrgSlugAgentsAgentIdGeneralRoute =
+  OOrgSlugAgentsAgentIdGeneralRouteImport.update({
+    id: '/general',
+    path: '/general',
     getParentRoute: () => OOrgSlugAgentsAgentIdRoute,
   } as any)
 const OOrgSlugAgentsAgentIdKnowledgeBasesIndexRoute =
@@ -103,7 +124,10 @@ export interface FileRoutesByFullPath {
   '/o/$orgSlug/': typeof OOrgSlugIndexRoute
   '/o/$orgSlug/agents/$agentId': typeof OOrgSlugAgentsAgentIdRouteWithChildren
   '/o/$orgSlug/agents/': typeof OOrgSlugAgentsIndexRoute
+  '/o/$orgSlug/agents/$agentId/general': typeof OOrgSlugAgentsAgentIdGeneralRoute
   '/o/$orgSlug/agents/$agentId/knowledge-bases': typeof OOrgSlugAgentsAgentIdKnowledgeBasesRouteWithChildren
+  '/o/$orgSlug/agents/$agentId/model': typeof OOrgSlugAgentsAgentIdModelRoute
+  '/o/$orgSlug/agents/$agentId/prompt': typeof OOrgSlugAgentsAgentIdPromptRoute
   '/o/$orgSlug/agents/$agentId/skills': typeof OOrgSlugAgentsAgentIdSkillsRoute
   '/o/$orgSlug/agents/$agentId/tools': typeof OOrgSlugAgentsAgentIdToolsRoute
   '/o/$orgSlug/agents/$agentId/versions': typeof OOrgSlugAgentsAgentIdVersionsRoute
@@ -116,6 +140,9 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/o/$orgSlug': typeof OOrgSlugIndexRoute
   '/o/$orgSlug/agents': typeof OOrgSlugAgentsIndexRoute
+  '/o/$orgSlug/agents/$agentId/general': typeof OOrgSlugAgentsAgentIdGeneralRoute
+  '/o/$orgSlug/agents/$agentId/model': typeof OOrgSlugAgentsAgentIdModelRoute
+  '/o/$orgSlug/agents/$agentId/prompt': typeof OOrgSlugAgentsAgentIdPromptRoute
   '/o/$orgSlug/agents/$agentId/skills': typeof OOrgSlugAgentsAgentIdSkillsRoute
   '/o/$orgSlug/agents/$agentId/tools': typeof OOrgSlugAgentsAgentIdToolsRoute
   '/o/$orgSlug/agents/$agentId/versions': typeof OOrgSlugAgentsAgentIdVersionsRoute
@@ -131,7 +158,10 @@ export interface FileRoutesById {
   '/o/$orgSlug/': typeof OOrgSlugIndexRoute
   '/o/$orgSlug/agents/$agentId': typeof OOrgSlugAgentsAgentIdRouteWithChildren
   '/o/$orgSlug/agents/': typeof OOrgSlugAgentsIndexRoute
+  '/o/$orgSlug/agents/$agentId/general': typeof OOrgSlugAgentsAgentIdGeneralRoute
   '/o/$orgSlug/agents/$agentId/knowledge-bases': typeof OOrgSlugAgentsAgentIdKnowledgeBasesRouteWithChildren
+  '/o/$orgSlug/agents/$agentId/model': typeof OOrgSlugAgentsAgentIdModelRoute
+  '/o/$orgSlug/agents/$agentId/prompt': typeof OOrgSlugAgentsAgentIdPromptRoute
   '/o/$orgSlug/agents/$agentId/skills': typeof OOrgSlugAgentsAgentIdSkillsRoute
   '/o/$orgSlug/agents/$agentId/tools': typeof OOrgSlugAgentsAgentIdToolsRoute
   '/o/$orgSlug/agents/$agentId/versions': typeof OOrgSlugAgentsAgentIdVersionsRoute
@@ -148,7 +178,10 @@ export interface FileRouteTypes {
     | '/o/$orgSlug/'
     | '/o/$orgSlug/agents/$agentId'
     | '/o/$orgSlug/agents/'
+    | '/o/$orgSlug/agents/$agentId/general'
     | '/o/$orgSlug/agents/$agentId/knowledge-bases'
+    | '/o/$orgSlug/agents/$agentId/model'
+    | '/o/$orgSlug/agents/$agentId/prompt'
     | '/o/$orgSlug/agents/$agentId/skills'
     | '/o/$orgSlug/agents/$agentId/tools'
     | '/o/$orgSlug/agents/$agentId/versions'
@@ -161,6 +194,9 @@ export interface FileRouteTypes {
     | '/'
     | '/o/$orgSlug'
     | '/o/$orgSlug/agents'
+    | '/o/$orgSlug/agents/$agentId/general'
+    | '/o/$orgSlug/agents/$agentId/model'
+    | '/o/$orgSlug/agents/$agentId/prompt'
     | '/o/$orgSlug/agents/$agentId/skills'
     | '/o/$orgSlug/agents/$agentId/tools'
     | '/o/$orgSlug/agents/$agentId/versions'
@@ -175,7 +211,10 @@ export interface FileRouteTypes {
     | '/o/$orgSlug/'
     | '/o/$orgSlug/agents/$agentId'
     | '/o/$orgSlug/agents/'
+    | '/o/$orgSlug/agents/$agentId/general'
     | '/o/$orgSlug/agents/$agentId/knowledge-bases'
+    | '/o/$orgSlug/agents/$agentId/model'
+    | '/o/$orgSlug/agents/$agentId/prompt'
     | '/o/$orgSlug/agents/$agentId/skills'
     | '/o/$orgSlug/agents/$agentId/tools'
     | '/o/$orgSlug/agents/$agentId/versions'
@@ -255,11 +294,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OOrgSlugAgentsAgentIdSkillsRouteImport
       parentRoute: typeof OOrgSlugAgentsAgentIdRoute
     }
+    '/o/$orgSlug/agents/$agentId/prompt': {
+      id: '/o/$orgSlug/agents/$agentId/prompt'
+      path: '/prompt'
+      fullPath: '/o/$orgSlug/agents/$agentId/prompt'
+      preLoaderRoute: typeof OOrgSlugAgentsAgentIdPromptRouteImport
+      parentRoute: typeof OOrgSlugAgentsAgentIdRoute
+    }
+    '/o/$orgSlug/agents/$agentId/model': {
+      id: '/o/$orgSlug/agents/$agentId/model'
+      path: '/model'
+      fullPath: '/o/$orgSlug/agents/$agentId/model'
+      preLoaderRoute: typeof OOrgSlugAgentsAgentIdModelRouteImport
+      parentRoute: typeof OOrgSlugAgentsAgentIdRoute
+    }
     '/o/$orgSlug/agents/$agentId/knowledge-bases': {
       id: '/o/$orgSlug/agents/$agentId/knowledge-bases'
       path: '/knowledge-bases'
       fullPath: '/o/$orgSlug/agents/$agentId/knowledge-bases'
       preLoaderRoute: typeof OOrgSlugAgentsAgentIdKnowledgeBasesRouteImport
+      parentRoute: typeof OOrgSlugAgentsAgentIdRoute
+    }
+    '/o/$orgSlug/agents/$agentId/general': {
+      id: '/o/$orgSlug/agents/$agentId/general'
+      path: '/general'
+      fullPath: '/o/$orgSlug/agents/$agentId/general'
+      preLoaderRoute: typeof OOrgSlugAgentsAgentIdGeneralRouteImport
       parentRoute: typeof OOrgSlugAgentsAgentIdRoute
     }
     '/o/$orgSlug/agents/$agentId/knowledge-bases/': {
@@ -308,7 +368,10 @@ const OOrgSlugAgentsAgentIdKnowledgeBasesRouteWithChildren =
   )
 
 interface OOrgSlugAgentsAgentIdRouteChildren {
+  OOrgSlugAgentsAgentIdGeneralRoute: typeof OOrgSlugAgentsAgentIdGeneralRoute
   OOrgSlugAgentsAgentIdKnowledgeBasesRoute: typeof OOrgSlugAgentsAgentIdKnowledgeBasesRouteWithChildren
+  OOrgSlugAgentsAgentIdModelRoute: typeof OOrgSlugAgentsAgentIdModelRoute
+  OOrgSlugAgentsAgentIdPromptRoute: typeof OOrgSlugAgentsAgentIdPromptRoute
   OOrgSlugAgentsAgentIdSkillsRoute: typeof OOrgSlugAgentsAgentIdSkillsRoute
   OOrgSlugAgentsAgentIdToolsRoute: typeof OOrgSlugAgentsAgentIdToolsRoute
   OOrgSlugAgentsAgentIdVersionsRoute: typeof OOrgSlugAgentsAgentIdVersionsRoute
@@ -316,8 +379,11 @@ interface OOrgSlugAgentsAgentIdRouteChildren {
 }
 
 const OOrgSlugAgentsAgentIdRouteChildren: OOrgSlugAgentsAgentIdRouteChildren = {
+  OOrgSlugAgentsAgentIdGeneralRoute: OOrgSlugAgentsAgentIdGeneralRoute,
   OOrgSlugAgentsAgentIdKnowledgeBasesRoute:
     OOrgSlugAgentsAgentIdKnowledgeBasesRouteWithChildren,
+  OOrgSlugAgentsAgentIdModelRoute: OOrgSlugAgentsAgentIdModelRoute,
+  OOrgSlugAgentsAgentIdPromptRoute: OOrgSlugAgentsAgentIdPromptRoute,
   OOrgSlugAgentsAgentIdSkillsRoute: OOrgSlugAgentsAgentIdSkillsRoute,
   OOrgSlugAgentsAgentIdToolsRoute: OOrgSlugAgentsAgentIdToolsRoute,
   OOrgSlugAgentsAgentIdVersionsRoute: OOrgSlugAgentsAgentIdVersionsRoute,

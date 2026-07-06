@@ -15,6 +15,12 @@ export type {
 } from './domain/index.js';
 
 export {
+  McpAuthKind,
+  ModelProvider,
+  VarKind,
+} from './domain/index.js';
+
+export {
   AgentRowSchema,
   AnthropicModelSchema,
   BedrockCredentialsSchema,
@@ -43,7 +49,18 @@ export {
 } from './domain/index.js';
 
 export {
+  AnthropicModels,
+  BedrockModels,
+  MODELS_BY_PROVIDER,
+  OpenAIModels,
+  type AnthropicModelId,
+  type BedrockModelId,
+  type OpenAIModelId,
+} from './domain/index.js';
+
+export {
   type AgentRepository,
+  type BuiltinToolRepository,
   type McpServerRepository,
   type RawTextEditable,
   type RegistryRepository,
@@ -51,9 +68,20 @@ export {
   type VarRepository,
 } from './interface.js';
 
-export type { BranchInput, BranchResult } from './types.js';
+export type {
+  BranchInput,
+  BranchResult,
+  UpdateAgentFieldsInput,
+  UpdateAgentFieldsResult,
+} from './types.js';
 
-export { BranchError, RegistryValidationError } from './errors.js';
+export { UpdateAgentFieldsInputSchema } from './types.js';
+
+export {
+  AgentNotFoundError,
+  BranchError,
+  RegistryValidationError,
+} from './errors.js';
 
 export {
   parseRegistryYaml,

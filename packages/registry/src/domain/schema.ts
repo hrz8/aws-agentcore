@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { McpAuthKind, ModelProvider, VarKind } from './types.js';
+
 export const TOOL_REF_REGEX = /^(?:builtin__[a-z0-9_]+|mcp__[a-z0-9_-]+)$/;
 export const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const SLUG_REGEX = /^[a-z][a-z0-9-]{0,62}[a-z0-9]$/;
@@ -13,11 +15,11 @@ export const VarTemplatedSchema = z.string().min(1);
 
 export const McpAuthSchema = z.discriminatedUnion('kind', [
   z.object({
-    kind: z.literal('bearer'),
+    kind: z.literal(McpAuthKind.Bearer),
     token: VarTemplatedSchema,
   }),
   z.object({
-    kind: z.literal('header'),
+    kind: z.literal(McpAuthKind.Header),
     name: z.string().min(1),
     value: VarTemplatedSchema,
   }),
@@ -33,10 +35,18 @@ export const ToolRefSchema = z.string().regex(
   'tool ref must match builtin__<name> or mcp__<server>',
 );
 
+export const BuiltinToolNameSchema = z
+  .string()
+  .regex(/^[a-z][a-z0-9_]{0,62}[a-z0-9]$/, 'must be lowercase snake_case, 2-64 chars');
+
+export const BuiltinToolConfigSchema = z.object({
+  description: z.string().min(1),
+});
+
 export const VarSchema = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('plain'), value: z.string() }),
+  z.object({ type: z.literal(VarKind.Plain), value: z.string() }),
   z.object({
-    type: z.literal('secretmanager'),
+    type: z.literal(VarKind.SecretManager),
     secretId: z.string().min(1),
     region: z.string().min(1).optional(),
     jsonField: z.string().min(1).optional(),
@@ -73,9 +83,9 @@ export const AnthropicModelSchema = z.object({
 });
 
 export const ModelSchema = z.discriminatedUnion('provider', [
-  z.object({ provider: z.literal('bedrock'), bedrock: BedrockModelSchema }),
-  z.object({ provider: z.literal('openai'), openai: OpenAIModelSchema }),
-  z.object({ provider: z.literal('anthropic'), anthropic: AnthropicModelSchema }),
+  z.object({ provider: z.literal(ModelProvider.Bedrock), bedrock: BedrockModelSchema }),
+  z.object({ provider: z.literal(ModelProvider.OpenAI), openai: OpenAIModelSchema }),
+  z.object({ provider: z.literal(ModelProvider.Anthropic), anthropic: AnthropicModelSchema }),
 ]);
 
 export const AgentRowSchema = z.object({

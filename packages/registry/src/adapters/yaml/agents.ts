@@ -2,18 +2,31 @@ import type {
   AgentDefinition,
   AgentIdentity,
 } from '../../domain/index.js';
-import { isMap, isSeq, parseDocument, YAMLSeq } from 'yaml';
+import { isMap, isSeq, parseDocument, YAMLMap, YAMLSeq } from 'yaml';
 
-import { BranchError } from '../../errors.js';
+import { AgentNotFoundError, BranchError, RegistryValidationError } from '../../errors.js';
 import type { AgentRepository } from '../../interface.js';
-import type { BranchInput, BranchResult } from '../../types.js';
+import {
+  UpdateAgentFieldsInputSchema,
+  type BranchInput,
+  type BranchResult,
+  type UpdateAgentFieldsInput,
+  type UpdateAgentFieldsResult,
+} from '../../types.js';
 
-import { idKey, slugKey, toIdentity, type RegistryIndexes } from './parse.js';
+import {
+  idKey,
+  slugKey,
+  toIdentity,
+  type RegistryIndexes,
+  type ValidateResult,
+} from './parse.js';
 
 export interface S3YamlAgentRepoDeps {
   getIndex: () => RegistryIndexes;
   readRaw: () => Promise<{ text: string; etag: string | undefined }>;
   writeRaw: (text: string) => Promise<{ etag: string | undefined }>;
+  validate: (text: string) => ValidateResult;
 }
 
 export class S3YamlAgentRepo implements AgentRepository {
@@ -132,4 +145,70 @@ export class S3YamlAgentRepo implements AgentRepository {
       etag: write.etag,
     };
   }
+
+  async updateFields(input: UpdateAgentFieldsInput): Promise<UpdateAgentFieldsResult> {
+    const parsedResult = UpdateAgentFieldsInputSchema.safeParse(input);
+    if (!parsedResult.success) {
+      throw new RegistryValidationError(
+        `invalid updateFields input: ${parsedResult.error.issues.map((i) => i.message).join('; ')}`,
+      );
+    }
+    const parsed = parsedResult.data;
+
+    const { text } = await this.deps.readRaw();
+
+    const preflight = this.deps.validate(text);
+    if (!preflight.ok) {
+      throw new RegistryValidationError(
+        `registry corrupted before edit: ${preflight.error.message}`,
+      );
+    }
+
+    const doc = parseDocument(text);
+    const tenants = doc.get('tenants') as YAMLSeq;
+    const tenantNode = findMapItem(tenants, (n) => n.get('id') === parsed.tenantId);
+    if (!tenantNode) {
+      throw new AgentNotFoundError(`tenant ${parsed.tenantId} not found`);
+    }
+
+    const agents = tenantNode.get('agents') as YAMLSeq;
+    const targetNode = findMapItem(
+      agents,
+      (n) => n.get('id') === parsed.agentId && n.get('version') === parsed.version,
+    );
+    if (!targetNode) {
+      throw new AgentNotFoundError(
+        `agent not found: ${parsed.tenantId}/${parsed.agentId}/${parsed.version}`,
+      );
+    }
+
+    for (const key of ['description', 'systemPrompt', 'model', 'tools'] as const) {
+      const value = parsed.patch[key];
+      if (value !== undefined) {
+        targetNode.set(key, value);
+      }
+    }
+
+    const nextText = doc.toString();
+    const write = await this.deps.writeRaw(nextText);
+    const target = await this.getByIds(parsed.tenantId, parsed.agentId, parsed.version);
+    if (!target) {
+      throw new Error(
+        `updateFields wrote successfully but re-read did not find (${parsed.tenantId}, ${parsed.agentId}, ${parsed.version})`,
+      );
+    }
+    return {
+      target,
+      etag: write.etag,
+    };
+  }
+}
+
+function findMapItem(seq: YAMLSeq, predicate: (n: YAMLMap) => boolean): YAMLMap | null {
+  for (const node of seq.items) {
+    if (isMap(node) && predicate(node)) {
+      return node;
+    }
+  }
+  return null;
 }

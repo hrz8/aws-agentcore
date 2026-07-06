@@ -1,7 +1,7 @@
 import { McpClient } from '@strands-agents/sdk';
 
 import type { McpServerConfig } from '@repo/registry';
-import { TenantVars } from '@repo/registry';
+import { McpAuthKind, TenantVars } from '@repo/registry';
 
 export function buildMcpClient(
   serverName: string,
@@ -21,7 +21,7 @@ function authToHeaders(
   vars: TenantVars,
 ): Record<string, string> | undefined {
   if (!config.auth) return undefined;
-  if (config.auth.kind === 'bearer') {
+  if (config.auth.kind === McpAuthKind.Bearer) {
     return { Authorization: `Bearer ${vars.interpolate(config.auth.token)}` };
   }
   return { [config.auth.name]: vars.interpolate(config.auth.value) };

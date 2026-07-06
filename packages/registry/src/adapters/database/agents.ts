@@ -4,7 +4,12 @@ import type {
 } from '../../domain/index.js';
 
 import type { AgentRepository } from '../../interface.js';
-import type { BranchInput, BranchResult } from '../../types.js';
+import type {
+  BranchInput,
+  BranchResult,
+  UpdateAgentFieldsInput,
+  UpdateAgentFieldsResult,
+} from '../../types.js';
 import type { PgPool } from './tenants.js';
 
 function notImplemented(): Error {
@@ -33,6 +38,9 @@ export class PostgresAgentRepo implements AgentRepository {
     throw notImplemented();
   }
   async branch(_input: BranchInput): Promise<BranchResult> {
+    throw notImplemented();
+  }
+  async updateFields(_input: UpdateAgentFieldsInput): Promise<UpdateAgentFieldsResult> {
     throw notImplemented();
   }
 }

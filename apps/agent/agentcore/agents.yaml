@@ -11,8 +11,10 @@
 #             (tenantId, agentId, version). Exactly one row per (tenantId,
 #             agentId) must have `enabled: true` — checked at load time.
 #
-# Tool refs (`tools:` list):
-#   builtin__<name>  — Strands custom tool from BUILTIN_TOOLS (see tools/registry.ts)
+# Tool refs (`tools:` list on each agent):
+#   builtin__<name>  — Strands custom tool from BUILTIN_TOOLS (see tools/registry.ts).
+#                      The <name> should also appear in the top-level `tools:`
+#                      catalog below; the dashboard renders that catalog as toggles.
 #   mcp__<server>    — whole MCP server from tenant.mcpServers
 #   Base tools (search_documents, search_web, skills, read_skill_resource)
 #   are attached AUTOMATICALLY inside buildAgent — do NOT list them here.
@@ -23,6 +25,19 @@
 #
 # Templated strings (apiKey, accessKeyId, token, header value, ...) accept
 # `{{ vars.NAME }}` blocks resolved against tenant.vars. Mid-string OK.
+
+# Top-level catalog of built-in tools available across every tenant/agent.
+# Agents opt in per-version by adding `builtin__<name>` to their `tools:` list.
+# The dashboard tool page renders this catalog as toggles.
+tools:
+  convert_temperature:
+    description: Convert between Celsius, Fahrenheit, and Kelvin.
+  get_current_datetime:
+    description: Get the current date and time in ISO 8601, with optional timezone.
+  get_location:
+    description: Geocode a place name or ZIP code to latitude/longitude coordinates.
+  get_weather_forecast:
+    description: Fetch a multi-day weather forecast for a latitude/longitude pair.
 
 tenants:
   - id: 231ec442-974b-4933-bc70-b00755fbcfce

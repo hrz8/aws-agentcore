@@ -1,5 +1,5 @@
 import { Link, useParams } from '@tanstack/react-router';
-import { BookText, Hammer, Wrench } from 'lucide-react';
+import { BookText, Cpu, FileText, Hammer, Info, Wrench } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 import { m } from '#/paraglide/messages.js';
@@ -12,6 +12,9 @@ interface Item {
 }
 
 const ITEMS: Item[] = [
+  { to: '/o/$orgSlug/agents/$agentId/general', labelKey: () => m.nav_general(), icon: Info },
+  { to: '/o/$orgSlug/agents/$agentId/prompt', labelKey: () => m.nav_prompt(), icon: FileText },
+  { to: '/o/$orgSlug/agents/$agentId/model', labelKey: () => m.nav_model(), icon: Cpu },
   { to: '/o/$orgSlug/agents/$agentId/knowledge-bases', labelKey: () => m.nav_knowledge_base(), icon: BookText },
   { to: '/o/$orgSlug/agents/$agentId/skills', labelKey: () => m.nav_skills(), icon: Wrench },
   { to: '/o/$orgSlug/agents/$agentId/tools', labelKey: () => m.nav_tools(), icon: Hammer },

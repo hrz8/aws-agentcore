@@ -1,12 +1,18 @@
 import type {
   AgentDefinition,
   AgentIdentity,
+  BuiltinToolConfig,
   McpServerConfig,
   TenantIdentity,
   Var,
 } from './domain/index.js';
 
-import type { BranchInput, BranchResult } from './types.js';
+import type {
+  BranchInput,
+  BranchResult,
+  UpdateAgentFieldsInput,
+  UpdateAgentFieldsResult,
+} from './types.js';
 
 export interface TenantRepository {
   list(): Promise<TenantIdentity[]>;
@@ -20,6 +26,7 @@ export interface AgentRepository {
   resolveEnabledByIds(tenantId: string, agentId: string): Promise<AgentDefinition>;
   identities(tenantId: string): Promise<AgentIdentity[]>;
   branch(input: BranchInput): Promise<BranchResult>;
+  updateFields(input: UpdateAgentFieldsInput): Promise<UpdateAgentFieldsResult>;
 }
 
 export interface McpServerRepository {
@@ -28,6 +35,10 @@ export interface McpServerRepository {
 
 export interface VarRepository {
   listByTenantId(tenantId: string): Promise<Record<string, Var>>;
+}
+
+export interface BuiltinToolRepository {
+  list(): Promise<Record<string, BuiltinToolConfig>>;
 }
 
 export interface RawTextEditable {
@@ -40,6 +51,7 @@ export interface RegistryRepository {
   readonly agents: AgentRepository;
   readonly mcpServers: McpServerRepository;
   readonly vars: VarRepository;
+  readonly builtinTools: BuiltinToolRepository;
   readonly rawText: RawTextEditable | null;
   refresh(): Promise<void>;
 }

@@ -18,6 +18,7 @@ export const ErrorCode = {
   RegistryBranchConflict: 'REGISTRY_BRANCH_CONFLICT',
   RegistryBranchSameVersion: 'REGISTRY_BRANCH_SAME_VERSION',
   RegistryNotEditable: 'REGISTRY_NOT_EDITABLE',
+  AgentNotFound: 'AGENT_NOT_FOUND',
 
   KbIngestFailed: 'KB_INGEST_FAILED',
   KbIngestTimeout: 'KB_INGEST_TIMEOUT',
@@ -52,6 +53,7 @@ export const ERROR_CODE_STATUS: Record<ErrorCode, number> = {
   [ErrorCode.RegistryBranchConflict]: 409,
   [ErrorCode.RegistryBranchSameVersion]: 400,
   [ErrorCode.RegistryNotEditable]: 409,
+  [ErrorCode.AgentNotFound]: 404,
 
   [ErrorCode.KbIngestFailed]: 502,
   [ErrorCode.KbIngestTimeout]: 504,

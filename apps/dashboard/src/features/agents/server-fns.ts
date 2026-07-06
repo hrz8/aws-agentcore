@@ -1,7 +1,13 @@
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 
-import { BranchError, RegistryValidationError } from '@repo/registry';
+import {
+  AgentNotFoundError,
+  BranchError,
+  ModelSchema,
+  RegistryValidationError,
+  ToolRefSchema,
+} from '@repo/registry';
 
 import { withContext } from '#/server/_lib/middleware';
 import { safeEnvelope } from '#/server/_lib/server-fn/envelope.server';
@@ -83,17 +89,95 @@ export const putRegistryServerFn = createServerFn({ method: 'POST' })
     }),
   );
 
-const ListAgentToolsSchema = z.object({ scope: WireScopeSchema });
-
-export const listAgentToolsServerFn = createServerFn({ method: 'GET' })
+export const listBuiltinToolsServerFn = createServerFn({ method: 'GET' })
   .middleware([withContext])
-  .validator(zodInput(ListAgentToolsSchema))
+  .handler(
+    safeEnvelope(async () => {
+      const repo = await getRegistryRepo();
+      return { tools: await repo.builtinTools.list() };
+    }),
+  );
+
+const GetAgentDetailsSchema = z.object({ scope: WireScopeSchema });
+
+export const getAgentDetailsServerFn = createServerFn({ method: 'GET' })
+  .middleware([withContext])
+  .validator(zodInput(GetAgentDetailsSchema))
   .handler(
     safeEnvelope(async ({ data }) => {
       const scope = await resolveTenantScope(data.scope);
       const repo = await getRegistryRepo();
       const row = await repo.agents.getByIds(scope.tenantId, scope.agentId, scope.version);
-      return { tools: row?.tools ?? [] };
+      if (!row) {
+        throw new AppError(ErrorCode.AgentNotFound, {
+          message: 'agent version not found',
+          meta: {
+            tenantSlug: scope.tenantSlug,
+            agentId: scope.agentId,
+            version: scope.version,
+          },
+        });
+      }
+      return {
+        description: row.description,
+        systemPrompt: row.systemPrompt,
+        model: row.model,
+        tools: row.tools,
+      };
+    }),
+  );
+
+const AgentPatchSchema = z.object({
+  description: z.string().min(1).max(1_000).optional(),
+  systemPrompt: z.string().min(1).max(64_000).optional(),
+  model: ModelSchema.optional(),
+  tools: z.array(ToolRefSchema).max(64).optional(),
+}).refine(
+  (p) => Object.values(p).some((v) => v !== undefined),
+  { message: 'patch must include at least one field' },
+);
+
+const UpdateAgentConfigSchema = z.object({
+  scope: WireScopeSchema,
+  patch: AgentPatchSchema,
+});
+
+export const updateAgentConfigServerFn = createServerFn({ method: 'POST' })
+  .middleware([withContext])
+  .validator(zodInput(UpdateAgentConfigSchema))
+  .handler(
+    safeEnvelope(async ({ data }) => {
+      const scope = await resolveTenantScope(data.scope);
+      const repo = await getRegistryRepo();
+      try {
+        const result = await repo.agents.updateFields({
+          tenantId: scope.tenantId,
+          agentId: scope.agentId,
+          version: scope.version,
+          patch: data.patch,
+        });
+        return {
+          ok: true as const,
+          target: {
+            description: result.target.description,
+            systemPrompt: result.target.systemPrompt,
+            model: result.target.model,
+            tools: result.target.tools,
+          },
+          etag: result.etag ?? null,
+        };
+      } catch (err) {
+        if (err instanceof AgentNotFoundError) {
+          throw new AppError(ErrorCode.AgentNotFound, { message: err.message, cause: err });
+        }
+        if (err instanceof RegistryValidationError) {
+          throw new AppError(ErrorCode.RegistryValidationFailed, {
+            message: err.message,
+            cause: err,
+          });
+        }
+        throw err;
+      }
     }),
   );
 

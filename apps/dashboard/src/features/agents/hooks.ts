@@ -2,11 +2,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams, useSearch } from '@tanstack/react-router';
 import * as React from 'react';
 
+import type { ModelDef, ToolRef } from '@repo/registry';
+
 import { callServerFn } from '#/shared/server-fn/envelope';
-import type { ResolvedScope } from '#/shared/scope';
+import { toWireScope, type ResolvedScope } from '#/shared/scope';
 
 import { agentsQueries } from './queries';
-import { putRegistryServerFn } from './server-fns';
+import { putRegistryServerFn, updateAgentConfigServerFn } from './server-fns';
 import type { AgentIdentity } from './types';
 
 export function useTenants() {
@@ -94,15 +96,45 @@ export function useAgentVersions(): AgentIdentity[] {
   }, [params.agentId, agentsQuery.data]);
 }
 
-export function useAgentTools() {
+export function useAgentDetails() {
   const scope = useCurrentScope();
   return useQuery({
-    ...agentsQueries.tools(scope ?? {
+    ...agentsQueries.details(scope ?? {
       tenantId: '',
       tenantSlug: '',
       agentId: '',
       agentVersion: '',
     }),
     enabled: !!scope,
+  });
+}
+
+export type AgentConfigPatch = {
+  description?: string;
+  systemPrompt?: string;
+  model?: ModelDef;
+  tools?: ToolRef[];
+};
+
+export function useBuiltinTools() {
+  return useQuery(agentsQueries.builtinTools());
+}
+
+export function useUpdateAgentConfig() {
+  const qc = useQueryClient();
+  const scope = useCurrentScope();
+  return useMutation({
+    mutationFn: (patch: AgentConfigPatch) => {
+      if (!scope) {
+        throw new Error('useUpdateAgentConfig: no active scope');
+      }
+      return callServerFn(updateAgentConfigServerFn, {
+        scope: toWireScope(scope),
+        patch,
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: agentsQueries.all });
+    },
   });
 }

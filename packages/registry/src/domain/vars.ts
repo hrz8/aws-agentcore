@@ -1,4 +1,4 @@
-import type { Var, VarTemplated } from './types.js';
+import { VarKind, type Var, type VarTemplated } from './types.js';
 
 const VAR_REF_REGEX = /\{\{\s*vars\.([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g;
 const VAR_REF_REGEX_SINGLE = /^\{\{\s*vars\.([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}$/;
@@ -45,9 +45,9 @@ export class TenantVars {
       );
     }
     switch (v.type) {
-      case 'plain':
+      case VarKind.Plain:
         return v.value;
-      case 'secretmanager':
+      case VarKind.SecretManager:
         throw new Error(
           `var "${name}": type=secretmanager is reserved but not yet implemented `
           + `(secretId="${v.secretId}").`,

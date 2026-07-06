@@ -4,9 +4,10 @@ import { callServerFn } from '#/shared/server-fn/envelope';
 import { toWireScope, type ResolvedScope } from '#/shared/scope';
 
 import {
+  getAgentDetailsServerFn,
   getRegistryServerFn,
-  listAgentToolsServerFn,
   listAgentsServerFn,
+  listBuiltinToolsServerFn,
   listTenantsServerFn,
 } from './server-fns';
 
@@ -34,16 +35,24 @@ export const agentsQueries = {
       queryFn: () => callServerFn(getRegistryServerFn),
     }),
 
-  tools: (scope: ResolvedScope) =>
+  details: (scope: ResolvedScope) =>
     queryOptions({
       queryKey: [
         ...agentsQueries.all,
-        'tools',
+        'details',
         scope.tenantId,
         scope.agentId,
         scope.agentVersion,
       ] as const,
       queryFn: () =>
-        callServerFn(listAgentToolsServerFn, { scope: toWireScope(scope) }),
+        callServerFn(getAgentDetailsServerFn, { scope: toWireScope(scope) }),
+      staleTime: 0,
+    }),
+
+  builtinTools: () =>
+    queryOptions({
+      queryKey: [...agentsQueries.all, 'builtin-tools'] as const,
+      queryFn: () => callServerFn(listBuiltinToolsServerFn),
+      staleTime: 5 * 60_000,
     }),
 };

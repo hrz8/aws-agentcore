@@ -11,3 +11,10 @@ export class RegistryValidationError extends Error {
     this.name = 'RegistryValidationError';
   }
 }
+
+export class AgentNotFoundError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'AgentNotFoundError';
+  }
+}
