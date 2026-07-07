@@ -1,3 +1,4 @@
+import { useBlocker } from '@tanstack/react-router';
 import { Loader2, Upload } from 'lucide-react';
 import * as React from 'react';
 
@@ -13,6 +14,16 @@ export function SkillUploader() {
   const [status, setStatus] = React.useState<
     { kind: 'ok'; text: string } | { kind: 'err'; text: string } | null
   >(null);
+
+  const busy = upload.isPending;
+
+  useBlocker({
+    shouldBlockFn: () => {
+      if (!busy) return false;
+      return !window.confirm(m.skills_upload_leave_confirm());
+    },
+    enableBeforeUnload: () => busy,
+  });
 
   return (
     <Card>
@@ -45,8 +56,8 @@ export function SkillUploader() {
             });
           }}
         />
-        <Button onClick={() => inputRef.current?.click()} disabled={upload.isPending}>
-          {upload.isPending ? (
+        <Button onClick={() => inputRef.current?.click()} disabled={busy}>
+          {busy ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
             <Upload className="mr-2 h-4 w-4" />

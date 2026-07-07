@@ -15,6 +15,7 @@ import {
   deleteWebUrlServerFn,
   kbJobServerFn,
   presignUploadServerFn,
+  refreshWebUrlServerFn,
   startIngestionServerFn,
 } from './server-fns';
 import { IngestionJobStatus, KbDocStatus } from './types';
@@ -111,6 +112,19 @@ export function useDeleteWebUrl() {
   return useMutation({
     mutationFn: (input: { docId: string }) =>
       callServerFn(deleteWebUrlServerFn, {
+        scope: toWireScope(requireScope(scope)),
+        docId: input.docId,
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: kbQueries.all }),
+  });
+}
+
+export function useRefreshWebUrl() {
+  const scope = useCurrentScope();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { docId: string }) =>
+      callServerFn(refreshWebUrlServerFn, {
         scope: toWireScope(requireScope(scope)),
         docId: input.docId,
       }),

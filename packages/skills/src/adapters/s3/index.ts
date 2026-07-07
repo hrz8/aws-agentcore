@@ -232,6 +232,38 @@ export class S3SkillsRepository implements SkillsRepository {
     }
   }
 
+  async updateSkillMd(scope: Scope, name: string, skillMd: string): Promise<SkillSummary> {
+    assertSkillName(name);
+    const { frontmatter } = parseSkillMd(skillMd);
+    if (frontmatter.name !== name) {
+      throw new SkillValidationError(
+        `renaming a skill is not supported (frontmatter name "${frontmatter.name}" must equal "${name}")`,
+      );
+    }
+    const key = skillMdKeyFor(scope, name);
+    try {
+      await getObjectText(this.s3, this.bucket, key);
+    } catch (err) {
+      if (this.isMissingKey(err)) {
+        throw new SkillNotFoundError(name);
+      }
+      throw err;
+    }
+    await putObject(this.s3, {
+      bucket: this.bucket,
+      key,
+      body: skillMd,
+      contentType: 'text/markdown',
+    });
+    this.log?.info('skills.update-skill-md', {
+      skill: name,
+      tenantId: scope.tenantId,
+      agentId: scope.agentId,
+      version: scope.version,
+    });
+    return { name: frontmatter.name, description: frontmatter.description };
+  }
+
   async signResource(input: SignResourceInput): Promise<SignedResourceUrl> {
     const ttl = input.ttlSeconds ?? DEFAULT_SIGN_TTL_S;
     assertResourcePath(input.name, input.path);
@@ -255,9 +287,6 @@ export class S3SkillsRepository implements SkillsRepository {
       );
     }
     const sourceObjects = await listObjects(this.s3, this.bucket, sourcePrefix);
-    if (sourceObjects.length === 0) {
-      throw new SkillValidationError(`no objects under source prefix ${sourcePrefix}`);
-    }
 
     let filesCopied = 0;
     let sidecarsRewritten = 0;
@@ -293,6 +322,11 @@ export class S3SkillsRepository implements SkillsRepository {
       sourcePrefix,
       targetPrefix,
     };
+  }
+
+  async deleteScope(scope: Scope): Promise<{ filesDeleted: number }> {
+    const filesDeleted = await deletePrefix(this.s3, this.bucket, skillsRootPrefixFor(scope));
+    return { filesDeleted };
   }
 
   private isMissingKey(err: unknown): boolean {

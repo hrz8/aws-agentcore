@@ -1,10 +1,11 @@
+import { useBlocker } from '@tanstack/react-router';
 import { CheckCircle2, Loader2, RotateCcw, Save, XCircle } from 'lucide-react';
 import * as React from 'react';
 
 import { m } from '#/paraglide/messages.js';
+import { MarkdownEditor } from '#/components/markdown-editor';
 import { Button } from '#/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#/components/ui/card';
-import { Textarea } from '#/components/ui/textarea';
 import { cn } from '#/shared/utils';
 
 import { useAgentDetails, useUpdateAgentConfig } from '../hooks';
@@ -27,6 +28,14 @@ export function SystemPromptEditor() {
 
   const dirty = draft !== serverValue;
   const canSave = dirty && draft.trim().length > 0 && !update.isPending;
+
+  useBlocker({
+    shouldBlockFn: () => {
+      if (!dirty) return false;
+      return !window.confirm(m.skills_editor_leave_confirm());
+    },
+    enableBeforeUnload: () => dirty,
+  });
 
   function save() {
     if (!canSave) return;
@@ -78,16 +87,15 @@ export function SystemPromptEditor() {
             <CardDescription>{m.prompt_card_body()}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
-            <Textarea
+            <MarkdownEditor
               value={draft}
-              onChange={(e) => {
-                setDraft(e.target.value);
+              onChange={(next) => {
+                setDraft(next);
                 if (message) setMessage(null);
               }}
               placeholder={m.prompt_placeholder()}
-              spellCheck={false}
               disabled={update.isPending}
-              className="min-h-[24rem] font-mono text-xs leading-relaxed"
+              height="60vh"
             />
 
             <div className="flex items-center justify-end gap-2">

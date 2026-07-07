@@ -49,6 +49,12 @@ export {
 } from './domain/index.js';
 
 export {
+  LIVE_VERSION_ALIAS,
+  isLiveAlias,
+  resolveAgentWithLive,
+} from './live.js';
+
+export {
   AnthropicModels,
   BedrockModels,
   MODELS_BY_PROVIDER,
@@ -71,6 +77,8 @@ export {
 export type {
   BranchInput,
   BranchResult,
+  SetEnabledInput,
+  SetEnabledResult,
   UpdateAgentFieldsInput,
   UpdateAgentFieldsResult,
 } from './types.js';

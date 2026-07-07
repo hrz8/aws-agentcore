@@ -10,6 +10,8 @@ import type {
 import type {
   BranchInput,
   BranchResult,
+  SetEnabledInput,
+  SetEnabledResult,
   UpdateAgentFieldsInput,
   UpdateAgentFieldsResult,
 } from './types.js';
@@ -27,6 +29,7 @@ export interface AgentRepository {
   identities(tenantId: string): Promise<AgentIdentity[]>;
   branch(input: BranchInput): Promise<BranchResult>;
   updateFields(input: UpdateAgentFieldsInput): Promise<UpdateAgentFieldsResult>;
+  setEnabled(input: SetEnabledInput): Promise<SetEnabledResult>;
 }
 
 export interface McpServerRepository {

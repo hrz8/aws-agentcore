@@ -3,8 +3,10 @@ import { Readable } from 'node:stream';
 import { Router, type Request, type Response } from 'express';
 
 import { composeActorId, composeRuntimeSessionId } from '@repo/kit/identity';
+import { isLiveAlias, resolveAgentWithLive } from '@repo/registry';
 
 import { createInvoker } from '../agents/index.js';
+import { getRegistry } from '../registry.js';
 import { readScopeFromHeaders } from '../utils/scope.js';
 
 const router = Router();
@@ -35,11 +37,35 @@ router.post('/chat', async (req: Request, res: Response) => {
   }
   const { tenantId, agentId, agentVersion } = scoped.scope;
 
+  let resolvedVersion: string;
+  if (agentVersion === null || isLiveAlias(agentVersion)) {
+    try {
+      const registry = await getRegistry();
+      await registry.refresh();
+      const def = await resolveAgentWithLive(registry, tenantId, agentId, 'live');
+      if (!def) {
+        res.status(404).json({
+          error: `no enabled version for agent ${agentId} in tenant ${tenantId}`,
+        });
+        return;
+      }
+      resolvedVersion = def.version;
+    } catch (err) {
+      res.status(500).json({
+        error: 'live version resolution failed',
+        detail: err instanceof Error ? err.message : String(err),
+      });
+      return;
+    }
+  } else {
+    resolvedVersion = agentVersion;
+  }
+
   const rawActor = req.header('x-actor-id');
   const actorId = composeActorId(tenantId, rawActor);
   const threadId = extractThreadId(req.body);
   const runtimeSessionId = composeRuntimeSessionId({
-    tenantId, agentId, agentVersion, rawActor, threadId,
+    tenantId, agentId, agentVersion: resolvedVersion, rawActor, threadId,
   });
 
   if (typeof req.body === 'object' && req.body !== null) {
@@ -48,7 +74,7 @@ router.post('/chat', async (req: Request, res: Response) => {
       ...body.forwardedProps,
       tenantId,
       agentId,
-      agentVersion,
+      agentVersion: resolvedVersion,
       actorId,
     };
   }

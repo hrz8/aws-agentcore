@@ -7,6 +7,8 @@ import type { AgentRepository } from '../../interface.js';
 import type {
   BranchInput,
   BranchResult,
+  SetEnabledInput,
+  SetEnabledResult,
   UpdateAgentFieldsInput,
   UpdateAgentFieldsResult,
 } from '../../types.js';
@@ -41,6 +43,9 @@ export class PostgresAgentRepo implements AgentRepository {
     throw notImplemented();
   }
   async updateFields(_input: UpdateAgentFieldsInput): Promise<UpdateAgentFieldsResult> {
+    throw notImplemented();
+  }
+  async setEnabled(_input: SetEnabledInput): Promise<SetEnabledResult> {
     throw notImplemented();
   }
 }

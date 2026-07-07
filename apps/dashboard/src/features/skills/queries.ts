@@ -3,7 +3,7 @@ import { queryOptions } from '@tanstack/react-query';
 import { callServerFn } from '#/shared/server-fn/envelope';
 import { toWireScope, type ResolvedScope } from '#/shared/scope';
 
-import { listSkillsServerFn } from './server-fns';
+import { getSkillContentServerFn, listSkillsServerFn } from './server-fns';
 
 export const skillsQueries = {
   all: ['skills'] as const,
@@ -13,5 +13,19 @@ export const skillsQueries = {
       queryKey: [...skillsQueries.all, 'list', scope.tenantId, scope.agentId, scope.agentVersion] as const,
       queryFn: () =>
         callServerFn(listSkillsServerFn, { scope: toWireScope(scope) }),
+    }),
+
+  content: (scope: ResolvedScope, name: string) =>
+    queryOptions({
+      queryKey: [
+        ...skillsQueries.all,
+        'content',
+        scope.tenantId,
+        scope.agentId,
+        scope.agentVersion,
+        name,
+      ] as const,
+      queryFn: () =>
+        callServerFn(getSkillContentServerFn, { scope: toWireScope(scope), name }),
     }),
 };

@@ -125,6 +125,23 @@ export class MemorySkillsRepository implements SkillsRepository {
     this.store.delete(key);
   }
 
+  async updateSkillMd(scope: Scope, name: string, skillMd: string): Promise<SkillSummary> {
+    assertSkillName(name);
+    const key = keyOf(scope, name);
+    const existing = this.store.get(key);
+    if (!existing) {
+      throw new SkillNotFoundError(name);
+    }
+    const { frontmatter, body } = parseSkillMd(skillMd);
+    if (frontmatter.name !== name) {
+      throw new SkillValidationError(
+        `renaming a skill is not supported (frontmatter name "${frontmatter.name}" must equal "${name}")`,
+      );
+    }
+    this.write(scope, skillMd, body, frontmatter, existing.resources);
+    return { name: frontmatter.name, description: frontmatter.description };
+  }
+
   async signResource(input: SignResourceInput): Promise<SignedResourceUrl> {
     assertResourcePath(input.name, input.path);
     return {
@@ -162,9 +179,6 @@ export class MemorySkillsRepository implements SkillsRepository {
       filesCopied += 2 + entry.resources.size;
       sidecarsRewritten += 1;
     }
-    if (filesCopied === 0) {
-      throw new SkillValidationError(`no objects under source prefix ${sourcePrefix}`);
-    }
     return {
       sourceVersion: input.scope.version,
       targetVersion: input.toVersion,
@@ -173,5 +187,20 @@ export class MemorySkillsRepository implements SkillsRepository {
       sourcePrefix,
       targetPrefix,
     };
+  }
+
+  async deleteScope(scope: Scope): Promise<{ filesDeleted: number }> {
+    const prefix = scopePrefixOf(scope);
+    let filesDeleted = 0;
+    for (const key of [...this.store.keys()]) {
+      if (key.startsWith(prefix)) {
+        const entry = this.store.get(key);
+        if (entry) {
+          filesDeleted += 2 + entry.resources.size;
+          this.store.delete(key);
+        }
+      }
+    }
+    return { filesDeleted };
   }
 }

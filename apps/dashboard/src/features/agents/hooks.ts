@@ -8,7 +8,12 @@ import { callServerFn } from '#/shared/server-fn/envelope';
 import { toWireScope, type ResolvedScope } from '#/shared/scope';
 
 import { agentsQueries } from './queries';
-import { putRegistryServerFn, updateAgentConfigServerFn } from './server-fns';
+import {
+  branchAgentVersionServerFn,
+  putRegistryServerFn,
+  setLiveAgentVersionServerFn,
+  updateAgentConfigServerFn,
+} from './server-fns';
 import type { AgentIdentity } from './types';
 
 export function useTenants() {
@@ -131,6 +136,45 @@ export function useUpdateAgentConfig() {
       return callServerFn(updateAgentConfigServerFn, {
         scope: toWireScope(scope),
         patch,
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: agentsQueries.all });
+    },
+  });
+}
+
+export function useSetLiveAgentVersion() {
+  const qc = useQueryClient();
+  const scope = useCurrentScope();
+  return useMutation({
+    mutationFn: (input: { toVersion: string }) => {
+      if (!scope) {
+        throw new Error('useSetLiveAgentVersion: no active scope');
+      }
+      return callServerFn(setLiveAgentVersionServerFn, {
+        scope: toWireScope(scope),
+        toVersion: input.toVersion,
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: agentsQueries.all });
+    },
+  });
+}
+
+export function useBranchAgentVersion() {
+  const qc = useQueryClient();
+  const scope = useCurrentScope();
+  return useMutation({
+    mutationFn: (input: { fromVersion: string; toVersion: string; enabled: boolean }) => {
+      if (!scope) {
+        throw new Error('useBranchAgentVersion: no active scope');
+      }
+      return callServerFn(branchAgentVersionServerFn, {
+        scope: toWireScope({ ...scope, agentVersion: input.fromVersion }),
+        toVersion: input.toVersion,
+        enabled: input.enabled,
       });
     },
     onSuccess: () => {

@@ -45,6 +45,14 @@ export interface KbRepository {
 
   listWebDocuments(scope: Scope): Promise<DocumentSummary[]>;
   deleteWebDocument(scope: Scope, docId: string): Promise<DocumentSummary>;
+  getWebManifest(scope: Scope, docId: string): Promise<{
+    sourceUrl: string;
+    title: string;
+    fetchedAt: string;
+    contentHash: string;
+    text?: string;
+  } | null>;
 
   branch(scope: Scope, input: BranchInput): Promise<BranchOutcome>;
+  deleteScope(scope: Scope): Promise<{ filesDeleted: number; webDocsDeleted: number }>;
 }

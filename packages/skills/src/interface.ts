@@ -31,7 +31,9 @@ export interface SkillsRepository {
   get(scope: Scope, name: string): Promise<SkillDetail>;
   getContent(scope: Scope, name: string): Promise<SkillContent>;
   install(scope: Scope, source: SkillSource): Promise<SkillSummary>;
+  updateSkillMd(scope: Scope, name: string, skillMd: string): Promise<SkillSummary>;
   remove(scope: Scope, name: string): Promise<void>;
   signResource(input: SignResourceInput): Promise<SignedResourceUrl>;
   branch(input: BranchInput): Promise<SkillBranchOutcome>;
+  deleteScope(scope: Scope): Promise<{ filesDeleted: number }>;
 }

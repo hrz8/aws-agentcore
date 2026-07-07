@@ -5,6 +5,7 @@ import {
   copyObject,
   createS3Client,
   deleteObjects,
+  deletePrefix,
   getObjectText,
   listObjects,
   NoSuchKey,
@@ -67,6 +68,8 @@ type WebManifest = {
   sourceUrl: string;
   title: string;
   fetchedAt: string;
+  contentHash: string;
+  text?: string;
 };
 
 const DEFAULT_UPLOAD_TTL_S = 5 * 60;
@@ -180,6 +183,8 @@ export class S3BedrockKbRepository implements KbRepository {
       sourceUrl: doc.sourceUrl,
       title: doc.title,
       fetchedAt: doc.fetchedAt,
+      contentHash: doc.contentHash,
+      text: doc.text,
     };
     await putObject(this.aws.s3, {
       bucket: this.bucket,
@@ -201,7 +206,12 @@ export class S3BedrockKbRepository implements KbRepository {
         [METADATA_KEYS.fetchedAt]: doc.fetchedAt,
       },
     });
-    return { ...summary, ...manifest };
+    return {
+      ...summary,
+      sourceUrl: manifest.sourceUrl,
+      title: manifest.title,
+      fetchedAt: manifest.fetchedAt,
+    };
   }
 
   async listWebDocuments(scope: Scope): Promise<DocumentSummary[]> {
@@ -215,7 +225,13 @@ export class S3BedrockKbRepository implements KbRepository {
       .filter((d) => d.documentId.startsWith(prefix))
       .map((d) => {
         const manifest = manifests.get(d.documentId);
-        return manifest ? { ...d, ...manifest } : d;
+        if (!manifest) return d;
+        return {
+          ...d,
+          sourceUrl: manifest.sourceUrl,
+          title: manifest.title,
+          fetchedAt: manifest.fetchedAt,
+        };
       });
   }
 
@@ -227,6 +243,17 @@ export class S3BedrockKbRepository implements KbRepository {
       deleteObjects(this.aws.s3, this.bucket, [webManifestKey(scope, docId)]),
     ]);
     return summary;
+  }
+
+  async getWebManifest(scope: Scope, docId: string): Promise<WebManifest | null> {
+    assertWebDocIdInScope(scope, docId);
+    try {
+      const raw = await getObjectText(this.aws.s3, this.bucket, webManifestKey(scope, docId));
+      return JSON.parse(raw) as WebManifest;
+    } catch (err) {
+      if (err instanceof NoSuchKey) return null;
+      throw err;
+    }
   }
 
   private async readWebManifests(scope: Scope): Promise<Map<string, WebManifest>> {
@@ -256,6 +283,7 @@ export class S3BedrockKbRepository implements KbRepository {
     const targetScope: Scope = { ...scope, version: input.toVersion };
     const sourcePrefix = kbPrefixFor(scope);
     const targetPrefix = kbPrefixFor(targetScope);
+    const sourceManifestPrefix = webManifestPrefix(scope);
 
     // TODO: not atomic — concurrent branches to the same toVersion both
     // pass the empty-target check and write. Guard with a .branch-lock
@@ -267,13 +295,11 @@ export class S3BedrockKbRepository implements KbRepository {
       );
     }
     const sourceObjects = await listObjects(this.aws.s3, this.bucket, sourcePrefix);
-    if (sourceObjects.length === 0) {
-      throw new KbValidationError(`no objects under source prefix ${sourcePrefix}`);
-    }
 
     let filesCopied = 0;
     let sidecarsRewritten = 0;
     for (const obj of sourceObjects) {
+      if (obj.key.startsWith(sourceManifestPrefix)) continue;
       const rel = obj.key.slice(sourcePrefix.length);
       const targetKey = `${targetPrefix}${rel}`;
       if (obj.key.endsWith('.metadata.json')) {
@@ -290,6 +316,37 @@ export class S3BedrockKbRepository implements KbRepository {
         await copyObject(this.aws.s3, this.bucket, obj.key, targetKey);
       }
       filesCopied += 1;
+    }
+
+    let webDocsCloned = 0;
+    let webDocsSkipped = 0;
+    if (this.webDataSourceId) {
+      const manifests = await this.readWebManifests(scope);
+      for (const manifest of manifests.values()) {
+        if (!manifest.text) {
+          webDocsSkipped += 1;
+          this.log?.warn?.('kb.branch.web-doc-skipped-no-text', {
+            sourceUrl: manifest.sourceUrl,
+          });
+          continue;
+        }
+        try {
+          await this.ingestWebDocument(targetScope, {
+            text: manifest.text,
+            contentHash: manifest.contentHash,
+            sourceUrl: manifest.sourceUrl,
+            title: manifest.title,
+            fetchedAt: manifest.fetchedAt,
+          });
+          webDocsCloned += 1;
+        } catch (err) {
+          webDocsSkipped += 1;
+          this.log?.warn?.('kb.branch.web-doc-clone-failed', {
+            sourceUrl: manifest.sourceUrl,
+            err: err instanceof Error ? err.message : String(err),
+          });
+        }
+      }
     }
 
     let ingestionJob: IngestionJob | null = null;
@@ -313,10 +370,32 @@ export class S3BedrockKbRepository implements KbRepository {
       sidecarsRewritten,
       sourcePrefix,
       targetPrefix,
-      webKbCloned: false,
-      webKbNote: 'Web KB custom docs are not cloned; re-ingest URLs under the new agent version.',
+      webKbCloned: webDocsCloned > 0,
+      webKbNote: webDocsSkipped > 0
+        ? `Cloned ${webDocsCloned} web docs; skipped ${webDocsSkipped} (missing stored text — refresh them in the source version, then re-branch).`
+        : `Cloned ${webDocsCloned} web docs.`,
       ingestionJob,
     };
+  }
+
+  async deleteScope(scope: Scope): Promise<{ filesDeleted: number; webDocsDeleted: number }> {
+    let webDocsDeleted = 0;
+    if (this.webDataSourceId) {
+      const docs = await this.listWebDocuments(scope);
+      for (const d of docs) {
+        try {
+          await deleteCustomDocument(this.aws.bedrock, this.kbId, this.webDataSourceId, d.documentId);
+          webDocsDeleted += 1;
+        } catch (err) {
+          this.log?.warn?.('kb.delete-scope.bedrock-delete-failed', {
+            docId: d.documentId,
+            err: err instanceof Error ? err.message : String(err),
+          });
+        }
+      }
+    }
+    const filesDeleted = await deletePrefix(this.aws.s3, this.bucket, kbPrefixFor(scope));
+    return { filesDeleted, webDocsDeleted };
   }
 
   private requireWebDs(): string {

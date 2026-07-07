@@ -32,6 +32,10 @@
       "types": "./dist/adapters/memory/index.d.ts",
       "default": "./dist/adapters/memory/index.js"
     },
+    "./format": {
+      "types": "./dist/format/index.d.ts",
+      "default": "./dist/format/index.js"
+    },
     "./testing": {
       "types": "./dist/testing/contract.d.ts",
       "default": "./dist/testing/contract.js"

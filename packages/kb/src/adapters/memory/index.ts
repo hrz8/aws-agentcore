@@ -185,6 +185,32 @@ export class MemoryKbRepository implements KbRepository {
     return { ...existing, status: 'DELETING' };
   }
 
+  async deleteScope(scope: Scope): Promise<{ filesDeleted: number; webDocsDeleted: number }> {
+    const files = this.files.get(scopeKey(scope));
+    const filesDeleted = files?.size ?? 0;
+    this.files.delete(scopeKey(scope));
+    const web = this.webDocs.get(scopeKey(scope));
+    const webDocsDeleted = web?.size ?? 0;
+    this.webDocs.delete(scopeKey(scope));
+    return { filesDeleted, webDocsDeleted };
+  }
+
+  async getWebManifest(scope: Scope, docId: string) {
+    if (!this.webConfigured) {
+      throw new KbNotConfiguredError('web data source not configured for this KB stage');
+    }
+    assertWebDocIdInScope(scope, docId);
+    const bucket = this.webDocs.get(scopeKey(scope));
+    const existing = bucket?.get(docId);
+    if (!existing || !existing.sourceUrl) return null;
+    return {
+      sourceUrl: existing.sourceUrl,
+      title: existing.title ?? '',
+      fetchedAt: existing.fetchedAt ?? '',
+      contentHash: docId.split('__').pop() ?? '',
+    };
+  }
+
   async branch(scope: Scope, input: BranchInput): Promise<BranchOutcome> {
     if (input.toVersion === scope.version) {
       throw new KbValidationError(`target version equals source (${input.toVersion})`);
@@ -192,9 +218,6 @@ export class MemoryKbRepository implements KbRepository {
     const sourceKey = scopeKey(scope);
     const targetKey = scopeKey({ ...scope, version: input.toVersion });
     const sourceBucket = this.files.get(sourceKey);
-    if (!sourceBucket || sourceBucket.size === 0) {
-      throw new KbValidationError(`no objects under source prefix kb/${sourceKey}/`);
-    }
     const targetBucket = this.files.get(targetKey);
     if (targetBucket && targetBucket.size > 0) {
       throw new KbConflictError(
@@ -203,12 +226,16 @@ export class MemoryKbRepository implements KbRepository {
     }
     const newBucket = new Map<string, StoredFile>();
     let filesCopied = 0;
-    for (const [key, file] of sourceBucket) {
-      const newKey = key.replace(`kb/${sourceKey}/`, `kb/${targetKey}/`);
-      newBucket.set(newKey, { ...file, key: newKey });
-      filesCopied += 1;
+    if (sourceBucket) {
+      for (const [key, file] of sourceBucket) {
+        const newKey = key.replace(`kb/${sourceKey}/`, `kb/${targetKey}/`);
+        newBucket.set(newKey, { ...file, key: newKey });
+        filesCopied += 1;
+      }
     }
-    this.files.set(targetKey, newBucket);
+    if (filesCopied > 0) {
+      this.files.set(targetKey, newBucket);
+    }
 
     const ingestionJob = input.sync !== false
       ? await this.startIngestion({ ...scope, version: input.toVersion })

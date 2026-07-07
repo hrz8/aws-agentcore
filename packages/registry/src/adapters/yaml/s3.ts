@@ -85,7 +85,15 @@ export class S3YamlRegistryRepository implements RegistryRepository {
   }
 
   async refresh(): Promise<void> {
-    await this.doRefresh({ initial: this.indexes === null });
+    if (this.inFlight) {
+      await this.inFlight;
+      return;
+    }
+    const initial = this.indexes === null;
+    this.inFlight = this.doRefresh({ initial }).finally(() => {
+      this.inFlight = null;
+    });
+    await this.inFlight;
   }
 
   private async doRefresh(opts: { initial: boolean }): Promise<void> {

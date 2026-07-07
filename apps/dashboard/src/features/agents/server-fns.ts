@@ -13,7 +13,7 @@ import { withContext } from '#/server/_lib/middleware';
 import { safeEnvelope } from '#/server/_lib/server-fn/envelope.server';
 import { resolveTenantScope } from '#/server/_lib/tenant/resolve';
 import { zodInput } from '#/server/_lib/zod-input';
-import { getRegistryRepo } from '#/server/repositories';
+import { getKbRepo, getRegistryRepo, getSkillsRepo } from '#/server/repositories';
 import { AppError, ErrorCode } from '#/shared/errors';
 import { TenantSlugSchema, WireScopeSchema } from '#/shared/scope';
 
@@ -225,6 +225,165 @@ export const branchRegistryServerFn = createServerFn({ method: 'POST' })
             ? ErrorCode.RegistryBranchConflict
             : ErrorCode.BadRequest;
           throw new AppError(code, { message: err.message, cause: err });
+        }
+        if (err instanceof RegistryValidationError) {
+          throw new AppError(ErrorCode.RegistryValidationFailed, {
+            message: err.message,
+            cause: err,
+          });
+        }
+        throw err;
+      }
+    }),
+  );
+
+const BranchAgentVersionSchema = z.object({
+  scope: WireScopeSchema,
+  toVersion: z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,31}$/, 'invalid target version format'),
+  enabled: z.boolean().default(false),
+});
+
+type BranchStep = 'kb' | 'skills' | 'registry';
+
+export const branchAgentVersionServerFn = createServerFn({ method: 'POST' })
+  .middleware([withContext])
+  .validator(zodInput(BranchAgentVersionSchema))
+  .handler(
+    safeEnvelope(async ({ data }) => {
+      const sourceScope = await resolveTenantScope(data.scope);
+      if (sourceScope.version === data.toVersion) {
+        throw new AppError(ErrorCode.RegistryBranchSameVersion, {
+          message: 'target version equals source',
+        });
+      }
+      const targetScope = { ...sourceScope, version: data.toVersion };
+      const registry = await getRegistryRepo();
+      const kb = getKbRepo();
+      const skills = getSkillsRepo();
+
+      const existingTarget = await registry.agents.getByIds(
+        sourceScope.tenantId, sourceScope.agentId, data.toVersion,
+      );
+      if (existingTarget) {
+        throw new AppError(ErrorCode.RegistryBranchConflict, {
+          message: `target version already exists: ${data.toVersion}`,
+        });
+      }
+
+      const completedSteps: BranchStep[] = [];
+      const rollback = async (reason: unknown): Promise<never> => {
+        for (const step of [...completedSteps].reverse()) {
+          try {
+            if (step === 'kb') await kb.deleteScope(targetScope);
+            if (step === 'skills') await skills.deleteScope(targetScope);
+          } catch (rollbackErr) {
+            console.warn(`[branch] rollback of ${step} failed`, rollbackErr);
+          }
+        }
+        throw new AppError(ErrorCode.InternalError, {
+          message: `branch failed and was rolled back: ${
+            reason instanceof Error ? reason.message : String(reason)
+          }`,
+          cause: reason instanceof Error ? reason : undefined,
+        });
+      };
+
+      let kbOutcome;
+      try {
+        kbOutcome = await kb.branch(sourceScope, {
+          toVersion: data.toVersion,
+          sync: false,
+        });
+        completedSteps.push('kb');
+      } catch (err) {
+        await rollback(err);
+      }
+
+      let skillsOutcome;
+      try {
+        skillsOutcome = await skills.branch({
+          scope: sourceScope,
+          toVersion: data.toVersion,
+        });
+        completedSteps.push('skills');
+      } catch (err) {
+        await rollback(err);
+      }
+
+      let registryResult;
+      try {
+        registryResult = await registry.agents.branch({
+          tenantId: sourceScope.tenantId,
+          agentId: sourceScope.agentId,
+          fromVersion: sourceScope.version,
+          toVersion: data.toVersion,
+          enabled: data.enabled,
+        });
+        completedSteps.push('registry');
+      } catch (err) {
+        await rollback(err);
+      }
+
+      let ingestionJobId: string | null = null;
+      try {
+        const job = await kb.startIngestion(targetScope);
+        ingestionJobId = job.ingestionJobId ?? null;
+      } catch (err) {
+        console.warn('[branch] final Bedrock re-sync failed (branch already committed)', err);
+      }
+
+      return {
+        target: {
+          tenantId: registryResult!.target.tenantId,
+          agentId: registryResult!.target.agentId,
+          agentSlug: registryResult!.target.agentSlug,
+          version: registryResult!.target.version,
+          enabled: registryResult!.target.enabled,
+        },
+        kb: {
+          filesCopied: kbOutcome!.filesCopied,
+          webKbCloned: kbOutcome!.webKbCloned,
+          webKbNote: kbOutcome!.webKbNote,
+        },
+        skills: {
+          filesCopied: skillsOutcome!.filesCopied,
+        },
+        ingestionJobId,
+      };
+    }),
+  );
+
+const SetLiveAgentVersionSchema = z.object({
+  scope: WireScopeSchema,
+  toVersion: z.string().min(1),
+});
+
+export const setLiveAgentVersionServerFn = createServerFn({ method: 'POST' })
+  .middleware([withContext])
+  .validator(zodInput(SetLiveAgentVersionSchema))
+  .handler(
+    safeEnvelope(async ({ data }) => {
+      const scope = await resolveTenantScope(data.scope);
+      try {
+        const repo = await getRegistryRepo();
+        const result = await repo.agents.setEnabled({
+          tenantId: scope.tenantId,
+          agentId: scope.agentId,
+          toVersion: data.toVersion,
+        });
+        return {
+          target: {
+            tenantId: result.target.tenantId,
+            agentId: result.target.agentId,
+            agentSlug: result.target.agentSlug,
+            version: result.target.version,
+            enabled: result.target.enabled,
+          },
+          previousLiveVersion: result.previousLiveVersion,
+        };
+      } catch (err) {
+        if (err instanceof AgentNotFoundError) {
+          throw new AppError(ErrorCode.NotFound, { message: err.message, cause: err });
         }
         if (err instanceof RegistryValidationError) {
           throw new AppError(ErrorCode.RegistryValidationFailed, {

@@ -10,6 +10,8 @@ import {
   UpdateAgentFieldsInputSchema,
   type BranchInput,
   type BranchResult,
+  type SetEnabledInput,
+  type SetEnabledResult,
   type UpdateAgentFieldsInput,
   type UpdateAgentFieldsResult,
 } from '../../types.js';
@@ -199,6 +201,80 @@ export class S3YamlAgentRepo implements AgentRepository {
     }
     return {
       target,
+      etag: write.etag,
+    };
+  }
+
+  async setEnabled(input: SetEnabledInput): Promise<SetEnabledResult> {
+    const { text } = await this.deps.readRaw();
+
+    const preflight = this.deps.validate(text);
+    if (!preflight.ok) {
+      throw new RegistryValidationError(
+        `registry corrupted before edit: ${preflight.error.message}`,
+      );
+    }
+
+    const doc = parseDocument(text);
+    const tenants = doc.get('tenants') as YAMLSeq;
+    const tenantNode = findMapItem(tenants, (n) => n.get('id') === input.tenantId);
+    if (!tenantNode) {
+      throw new AgentNotFoundError(`tenant ${input.tenantId} not found`);
+    }
+
+    const agents = tenantNode.get('agents') as YAMLSeq;
+    let targetNode: YAMLMap | null = null;
+    let previousLiveVersion: string | null = null;
+    const otherEnabledIndexes: number[] = [];
+
+    let idx = 0;
+    for (const node of agents.items) {
+      if (!isMap(node)) {
+        idx += 1; continue;
+      }
+      if (node.get('id') === input.agentId) {
+        if (node.get('version') === input.toVersion) {
+          targetNode = node;
+        } else if (node.get('enabled') === true) {
+          previousLiveVersion = String(node.get('version') ?? '');
+          otherEnabledIndexes.push(idx);
+        }
+      }
+      idx += 1;
+    }
+
+    if (!targetNode) {
+      throw new AgentNotFoundError(
+        `agent not found: ${input.tenantId}/${input.agentId}/${input.toVersion}`,
+      );
+    }
+    if (targetNode.get('enabled') === true) {
+      return {
+        target: (await this.getByIds(input.tenantId, input.agentId, input.toVersion))!,
+        previousLiveVersion: input.toVersion,
+        etag: undefined,
+      };
+    }
+
+    targetNode.set('enabled', true);
+    for (const i of otherEnabledIndexes) {
+      const existing = agents.items[i];
+      if (isMap(existing)) {
+        existing.set('enabled', false);
+      }
+    }
+
+    const nextText = doc.toString();
+    const write = await this.deps.writeRaw(nextText);
+    const target = await this.getByIds(input.tenantId, input.agentId, input.toVersion);
+    if (!target) {
+      throw new Error(
+        `setEnabled wrote successfully but re-read did not find (${input.tenantId}, ${input.agentId}, ${input.toVersion})`,
+      );
+    }
+    return {
+      target,
+      previousLiveVersion,
       etag: write.etag,
     };
   }

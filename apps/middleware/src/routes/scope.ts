@@ -1,4 +1,5 @@
 import { isUuid } from '@repo/kit/identity';
+import { resolveAgentWithLive } from '@repo/registry';
 import { Router } from 'express';
 import { z } from 'zod';
 
@@ -30,7 +31,7 @@ router.get('/scope', async (req, res) => {
       res.status(404).json({ error: 'tenant not found' });
       return;
     }
-    const agent = await registry.agents.getByIds(tenantId, agentId, version);
+    const agent = await resolveAgentWithLive(registry, tenantId, agentId, version);
     if (!agent) {
       res.status(404).json({ error: 'agent not found' });
       return;

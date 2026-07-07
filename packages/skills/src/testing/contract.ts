@@ -177,6 +177,55 @@ export function runSkillsContract(
       ).rejects.toBeInstanceOf(SkillValidationError);
     });
 
+    it('updateSkillMd() writes the new body and updates the description', async () => {
+      const repo = makeRepo();
+      await repo.install(scope, { kind: SkillSourceKind.SkillMd, bytes: skillMdBytes });
+      const updated = [
+        '---',
+        'name: hello',
+        'description: updated description',
+        '---',
+        'Say something else.',
+        '',
+      ].join('\n');
+      const summary = await repo.updateSkillMd(scope, 'hello', updated);
+      expect(summary).toEqual({ name: 'hello', description: 'updated description' });
+      const content = await repo.getContent(scope, 'hello');
+      expect(content.skillMd).toContain('Say something else.');
+      expect(content.skillMd).toContain('description: updated description');
+    });
+
+    it('updateSkillMd() rejects rename (frontmatter name mismatch)', async () => {
+      const repo = makeRepo();
+      await repo.install(scope, { kind: SkillSourceKind.SkillMd, bytes: skillMdBytes });
+      const renamed = [
+        '---',
+        'name: goodbye',
+        'description: says bye',
+        '---',
+        'Bye.',
+        '',
+      ].join('\n');
+      await expect(repo.updateSkillMd(scope, 'hello', renamed)).rejects.toBeInstanceOf(
+        SkillValidationError,
+      );
+    });
+
+    it('updateSkillMd() throws SkillNotFoundError when skill does not exist', async () => {
+      const repo = makeRepo();
+      await expect(repo.updateSkillMd(scope, 'nope', skillMd)).rejects.toBeInstanceOf(
+        SkillNotFoundError,
+      );
+    });
+
+    it('updateSkillMd() rejects invalid SKILL.md frontmatter', async () => {
+      const repo = makeRepo();
+      await repo.install(scope, { kind: SkillSourceKind.SkillMd, bytes: skillMdBytes });
+      await expect(
+        repo.updateSkillMd(scope, 'hello', 'no frontmatter at all'),
+      ).rejects.toBeInstanceOf(SkillValidationError);
+    });
+
     it('branch copies to a new version', async () => {
       const repo = makeRepo();
       await repo.install(scope, { kind: SkillSourceKind.SkillMd, bytes: skillMdBytes });

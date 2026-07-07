@@ -42,3 +42,15 @@ export type UpdateAgentFieldsResult = {
   target: AgentDefinition;
   etag: string | undefined;
 };
+
+export type SetEnabledInput = {
+  tenantId: string;
+  agentId: string;
+  toVersion: string;
+};
+
+export type SetEnabledResult = {
+  target: AgentDefinition;
+  previousLiveVersion: string | null;
+  etag: string | undefined;
+};

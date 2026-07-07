@@ -9,7 +9,11 @@ import {
 } from '#/shared/scope';
 
 import { skillsQueries } from './queries';
-import { deleteSkillServerFn, uploadSkillServerFn } from './server-fns';
+import {
+  deleteSkillServerFn,
+  updateSkillMdServerFn,
+  uploadSkillServerFn,
+} from './server-fns';
 
 const EMPTY_SCOPE: ResolvedScope = {
   tenantId: '',
@@ -41,6 +45,28 @@ export function useUploadSkill() {
         contentBase64,
       });
     },
+    onSuccess: () => qc.invalidateQueries({ queryKey: skillsQueries.all }),
+  });
+}
+
+export function useSkillContent(name: string | null) {
+  const scope = useCurrentScope();
+  return useQuery({
+    ...skillsQueries.content(scope ?? EMPTY_SCOPE, name ?? ''),
+    enabled: !!scope && !!name,
+  });
+}
+
+export function useUpdateSkillMd() {
+  const scope = useCurrentScope();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ name, skillMd }: { name: string; skillMd: string }) =>
+      callServerFn(updateSkillMdServerFn, {
+        scope: toWireScope(requireScope(scope)),
+        name,
+        skillMd,
+      }),
     onSuccess: () => qc.invalidateQueries({ queryKey: skillsQueries.all }),
   });
 }

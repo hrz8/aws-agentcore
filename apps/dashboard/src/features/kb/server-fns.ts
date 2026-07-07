@@ -142,6 +142,25 @@ export const deleteWebUrlServerFn = createServerFn({ method: 'POST' })
     }),
   );
 
+const RefreshWebUrlSchema = z.object({
+  scope: WireScopeSchema,
+  docId: z.string().min(1),
+});
+
+export const refreshWebUrlServerFn = createServerFn({ method: 'POST' })
+  .middleware([withContext])
+  .validator(zodInput(RefreshWebUrlSchema))
+  .handler(
+    safeEnvelope(async ({ data }) => {
+      const scope = await resolveTenantScope(data.scope);
+      try {
+        return await getWebIngestService().refreshDocument(scope, data.docId);
+      } catch (err) {
+        throw mapIngestError(err);
+      }
+    }),
+  );
+
 export const listDocumentsServerFn = createServerFn({ method: 'GET' })
   .middleware([withContext])
   .validator(zodInput(ScopeOnlySchema))

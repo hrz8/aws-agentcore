@@ -1,19 +1,17 @@
 import { Link, useParams } from '@tanstack/react-router';
-import { Terminal } from 'lucide-react';
 
 import { AgentSelector } from '#/features/agents';
 import { m } from '#/paraglide/messages.js';
-import { Button } from '#/components/ui/button';
 
 import { LanguageSwitcher } from './language-switcher';
 import { TenantSelector } from './tenant-selector';
 import { ThemeSwitcher } from './theme-switcher';
 
 interface NavbarProps {
-  onOpenDebug: () => void;
+  onOpenDebug?: () => void;
 }
 
-export function Navbar({ onOpenDebug }: NavbarProps) {
+export function Navbar(_props: NavbarProps) {
   const params = useParams({ strict: false }) as { orgSlug?: string; agentId?: string };
   const inAgentScope = Boolean(params.agentId);
   const orgSlug = params.orgSlug ?? '';
@@ -43,9 +41,6 @@ export function Navbar({ onOpenDebug }: NavbarProps) {
       <div className="ml-auto flex items-center gap-2">
         <LanguageSwitcher />
         <ThemeSwitcher />
-        <Button variant="ghost" size="sm" onClick={onOpenDebug} title={m.nav_debug_title()}>
-          <Terminal className="h-4 w-4" />
-        </Button>
       </div>
     </header>
   );

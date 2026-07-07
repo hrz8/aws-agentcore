@@ -92,6 +92,58 @@ export const getSkillServerFn = createServerFn({ method: 'GET' })
     }),
   );
 
+export const getSkillContentServerFn = createServerFn({ method: 'GET' })
+  .middleware([withContext])
+  .validator(zodInput(NamedSkillSchema))
+  .handler(
+    safeEnvelope(async ({ data }) => {
+      const scope = await resolveTenantScope(data.scope);
+      try {
+        return await getSkillsRepo().getContent(scope, data.name);
+      } catch (err) {
+        if (err instanceof SkillNotFoundError) {
+          throw new AppError(ErrorCode.NotFound, { message: err.message, cause: err });
+        }
+        if (err instanceof SkillValidationError) {
+          throw new AppError(ErrorCode.SkillNameInvalid, {
+            message: err.message,
+            cause: err,
+          });
+        }
+        throw err;
+      }
+    }),
+  );
+
+const UpdateSkillMdSchema = z.object({
+  scope: WireScopeSchema,
+  name: z.string().regex(SKILL_NAME_REGEX, 'invalid skill name'),
+  skillMd: z.string().min(1).max(1_000_000),
+});
+
+export const updateSkillMdServerFn = createServerFn({ method: 'POST' })
+  .middleware([withContext])
+  .validator(zodInput(UpdateSkillMdSchema))
+  .handler(
+    safeEnvelope(async ({ data }) => {
+      const scope = await resolveTenantScope(data.scope);
+      try {
+        return await getSkillsRepo().updateSkillMd(scope, data.name, data.skillMd);
+      } catch (err) {
+        if (err instanceof SkillNotFoundError) {
+          throw new AppError(ErrorCode.NotFound, { message: err.message, cause: err });
+        }
+        if (err instanceof SkillValidationError) {
+          throw new AppError(ErrorCode.SkillValidationFailed, {
+            message: err.message,
+            cause: err,
+          });
+        }
+        throw err;
+      }
+    }),
+  );
+
 export const deleteSkillServerFn = createServerFn({ method: 'POST' })
   .middleware([withContext])
   .validator(zodInput(NamedSkillSchema))

@@ -2,7 +2,7 @@ import type { Scope } from '@repo/kit/identity';
 import type { Logger } from '@repo/kit/logger';
 
 import type { DocumentSummary } from '../domain/index.js';
-import { WebIngestRejectedError } from '../errors.js';
+import { KbNotFoundError, WebIngestRejectedError } from '../errors.js';
 import type { KbRepository } from '../interface.js';
 
 import { fetchPage } from '../crawler/fetch-page.js';
@@ -66,6 +66,27 @@ export class WebIngestService {
       document: doc,
       sitemapFound: false as const,
     };
+  }
+
+  async refreshDocument(scope: Scope, docId: string): Promise<DocumentSummary> {
+    const manifest = await this.repo.getWebManifest(scope, docId);
+    if (!manifest) {
+      throw new KbNotFoundError(`no manifest for docId ${docId}`);
+    }
+    if (!(await isAllowed(manifest.sourceUrl))) {
+      throw new WebIngestRejectedError(manifest.sourceUrl, 'blocked by robots.txt');
+    }
+    const page = await fetchPage(manifest.sourceUrl);
+    if (page.contentHash !== manifest.contentHash) {
+      await this.repo.deleteWebDocument(scope, docId);
+    }
+    return this.repo.ingestWebDocument(scope, {
+      text: page.text,
+      contentHash: page.contentHash,
+      sourceUrl: page.url,
+      title: page.title,
+      fetchedAt: page.fetchedAt,
+    });
   }
 
   async crawlSitemap(scope: Scope, seedUrl: string): Promise<CrawlSitemapResult> {

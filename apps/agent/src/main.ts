@@ -36,13 +36,26 @@ const MEMORY_SNAPSHOT_STORAGE = createMemorySnapshotStorage();
 console.info(`[agent] registry source: ${REGISTRY_SOURCE}`);
 console.info(`[agent] stage kb=${KB_ID ?? 'off'} web=${KB_WEB_DATA_SOURCE_ID ?? 'off'} bucket=${UPLOADS_BUCKET ?? 'off'} memory=${MEMORY_ID ? 'on' : 'off'}`);
 
+const MAX_CACHED_SUB_APPS = 10;
 const subAppByScope = new Map<string, express.Express>();
 const buildInFlight = new Map<string, Promise<express.Express | null>>();
+
+function touchSubAppLru(key: string, value: express.Express): void {
+  subAppByScope.delete(key);
+  subAppByScope.set(key, value);
+  while (subAppByScope.size > MAX_CACHED_SUB_APPS) {
+    const oldest = subAppByScope.keys().next().value;
+    if (oldest === undefined) break;
+    subAppByScope.delete(oldest);
+    console.info(`[agent] evicted sub-app from cache (LRU): ${oldest}`);
+  }
+}
 
 async function getOrBuildSubApp(scope: Scope): Promise<express.Express | null> {
   const key = composeAgentScope(scope.tenantId, scope.agentId, scope.version);
   const cached = subAppByScope.get(key);
   if (cached) {
+    touchSubAppLru(key, cached);
     return cached;
   }
 
@@ -60,7 +73,7 @@ async function getOrBuildSubApp(scope: Scope): Promise<express.Express | null> {
     console.info(`[agent] building ${key} on first use`);
     const built = await buildAgent({ def, registry });
     const subApp = await makeSubApp(def, built);
-    subAppByScope.set(key, subApp);
+    touchSubAppLru(key, subApp);
     return subApp;
   })().finally(() => {
     buildInFlight.delete(key);
@@ -162,6 +175,7 @@ async function extractScope(body: unknown): Promise<ExtractedScope> {
     version = agentVersion as string;
   } else {
     try {
+      await registry.refresh();
       const resolved = await registry.agents.resolveEnabledByIds(tenantId, agentId);
       version = resolved.version;
     } catch (err) {
