@@ -7,12 +7,17 @@
   "engines": {
     "node": ">=24"
   },
+  "packageManager": "pnpm@10.34.4",
   "files": [
+    "astro.json",
     "base.json",
     "node.json",
     "react-library.json",
     "tanstack.json"
   ],
+  "devDependencies": {
+    "astro": "catalog:"
+  },
   "scripts": {
     "lint": "echo 'no lint targets' && exit 0"
   }

@@ -15,6 +15,8 @@ import { PublicAssets } from './constructs/public-assets.js';
 import { PublicAssetsBucket } from './constructs/public-assets-bucket.js';
 import { ThreadTable } from './constructs/thread-table.js';
 import { UploadsBucket } from './constructs/uploads-bucket.js';
+import { Website } from './constructs/website.js';
+import { WebsiteBucket } from './constructs/website-bucket.js';
 import { Stages } from './config.js';
 
 const STACK_NAME = 'Nd8Stack';
@@ -39,6 +41,8 @@ export class Nd8Stack extends Stack {
   readonly kb: BedrockKnowledgeBase;
   readonly agentcore: Agentcore;
   readonly publicAssets: PublicAssets;
+  readonly websiteBucket: WebsiteBucket;
+  readonly website: Website;
   readonly threadTable: ThreadTable;
   readonly middlewareWaf: MiddlewareWaf;
   readonly middleware: Middleware;
@@ -85,6 +89,17 @@ export class Nd8Stack extends Stack {
       bucket: this.publicAssetsBucket.bucket,
     });
 
+    this.websiteBucket = new WebsiteBucket(this, 'WebsiteBucket', {
+      namePrefix: NAME_PREFIX,
+      stage,
+    });
+
+    this.website = new Website(this, 'Website', {
+      namePrefix: NAME_PREFIX,
+      stage,
+      bucket: this.websiteBucket.bucket,
+    });
+
     this.threadTable = new ThreadTable(this, 'ThreadTable', {
       namePrefix: NAME_PREFIX,
       stage,
@@ -106,7 +121,7 @@ export class Nd8Stack extends Stack {
         this.publicAssets.url,
         'http://localhost:3456', // frontend dev server
         'http://localhost:4174', // frontend widget dev server
-        'http://localhost:5200', // dashboard dev server (later dashboard will have chat playground)
+        'http://localhost:8765', // dashboard dev server (later dashboard will have chat playground)
       ],
       threadTtlDays: THREAD_TTL_DAYS[stage] ?? (stage === Stages.Prod ? 90 : 30),
       webAclId: this.middlewareWaf.webAcl.attrArn,

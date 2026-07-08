@@ -1,0 +1,112 @@
+---
+/*
+ * Button — primary | secondary | ghost | link, with loading + disabled states.
+ * `href` present → renders <a>; absent → renders <button>. See ADR-0003 §6.
+ *
+ * Inert <a> renders as <span aria-disabled="true" tabindex="-1"> to natively
+ * block pointer + keyboard activation (Story Failure-modes AC). Dropping
+ * role="link" so AT announces label text only (the element is non-actionable
+ * — claiming it's a link would mislead).
+ *
+ * Touch target: base `min-h-[44px]` guarantees Story Validation §44×44 even
+ * for icon-only usage where padding-and-text alone wouldn't reach the floor.
+ * arbitrary 44px is non-spacing-scale (outline-offset / min-size aren't in
+ * stylelint's no-raw-px forbidden list per ADR-0002 §7).
+ */
+
+type Variant = 'primary' | 'secondary' | 'ghost' | 'link';
+type ButtonType = 'button' | 'submit' | 'reset';
+
+interface Props {
+  variant?: Variant;
+  type?: ButtonType;
+  href?: string | URL;
+  disabled?: boolean;
+  loading?: boolean;
+  ariaLabel?: string;
+  class?: string;
+}
+
+const {
+  variant = 'primary',
+  type = 'button',
+  href,
+  disabled = false,
+  loading = false,
+  ariaLabel,
+  class: className = '',
+} = Astro.props;
+
+const isAnchor = href !== undefined;
+const isInert = disabled || loading;
+
+const base = [
+  'group/btn relative inline-flex items-center justify-center gap-1',
+  'min-h-[44px] min-w-[44px]',
+  'rounded-btn',
+  'px-3 py-2',
+  'text-body font-semibold',
+  'transition-colors duration-150',
+  'focus-visible:outline-2 focus-visible:outline-offset-[2px] focus-visible:outline-ink-heading',
+  'select-none',
+];
+
+const variantClasses = {
+  primary:   'bg-accent text-ink-heading hover:bg-accent-deep active:bg-accent-deep',
+  secondary: 'border border-ink-heading bg-surface text-ink-heading hover:bg-bg-alt active:bg-border',
+  ghost:     'bg-bg-alt text-ink-heading hover:bg-border active:bg-border',
+  link:      'text-ink-heading underline underline-offset-4 decoration-1 hover:decoration-2 active:decoration-2 active:decoration-accent',
+} as const;
+
+const inertClasses = isInert
+  ? 'cursor-not-allowed opacity-60'
+  : 'cursor-pointer';
+
+const classes = [...base, variantClasses[variant], inertClasses, className];
+---
+
+{isAnchor ? (
+  isInert ? (
+    <span
+      aria-disabled="true"
+      aria-busy={loading ? 'true' : undefined}
+      aria-label={ariaLabel}
+      tabindex={-1}
+      class:list={classes}
+    >
+      <slot name="icon-left" />
+      {loading && (
+        <svg class="size-2 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" opacity="0.25" />
+          <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        </svg>
+      )}
+      <slot />
+      <slot name="icon-right" />
+    </span>
+  ) : (
+    <a href={href} aria-label={ariaLabel} class:list={classes}>
+      <slot name="icon-left" />
+      <slot />
+      <slot name="icon-right" />
+    </a>
+  )
+) : (
+  <button
+    type={type}
+    disabled={isInert}
+    aria-busy={loading ? 'true' : undefined}
+    aria-label={ariaLabel}
+    class:list={classes}
+  >
+    <slot name="icon-left" />
+    {loading && (
+      <svg class="size-2 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" opacity="0.25" />
+        <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      </svg>
+    )}
+    <slot />
+    <slot name="icon-right" />
+  </button>
+)}

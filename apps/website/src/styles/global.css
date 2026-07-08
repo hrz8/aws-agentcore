@@ -1,0 +1,174 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens — source of truth: Figma node 29:5768 (locked).
+ * Names verbatim from Figma; namespaced into Tailwind v4's `--color-*` /
+ * `--radius-*` / `--spacing-*` slots so utilities like `bg-accent`,
+ * `text-ink-body`, `rounded-btn`, `p-1` generate automatically. See ADR-0002.
+ */
+@theme {
+  --color-accent: #FFB900;
+  --color-accent-deep: #E8920C;
+  --color-gradient-to: #FF7A4D;
+  --color-bg: #FDF9F2;
+  --color-bg-alt: #FBF7EE;
+  --color-surface: #FFFFFF;
+  --color-border: #ECE4D5;
+  --color-ink-heading: #121820;
+  --color-ink-body: #1A1A1A;
+  --color-ink-muted: #7A7468;
+
+  /* Status colors — used by the Showcase Surface (and any future status surface)
+     for AA/FAIL badges. White text on either passes WCAG AA normal-text.
+     Not in Figma node 29:5768 (which covers brand identity); these are utility
+     status semantics, not brand. Verified by the contrast matrix. */
+  --color-pass: #15803D;
+  --color-fail: #B91C1C;
+
+  --radius-btn: 8px;
+  --radius-card: 14px;
+  --radius-pill: 999px;
+
+  /* Spacing scale — Figma's 7-step custom scale, replaces Tailwind's 4-multiple default.
+     `p-1` here means 8px, NOT 4px. See ADR-0002 §3 and CONTEXT.md "Spacing Step". */
+  --spacing-*: initial;
+  --spacing-1: 8px;
+  --spacing-2: 12px;
+  --spacing-3: 18px;
+  --spacing-4: 24px;
+  --spacing-5: 32px;
+  --spacing-6: 56px;
+  --spacing-7: 80px;
+
+  /* Type scale — Figma's 7-step scale, replaces Tailwind's text-{xs..9xl} default.
+     Display + H1 fluid between 640px (mobile) and 1280px (desktop) viewports.
+     Sizes are font-size only; pair with --font-syne / --font-sora + weight at the
+     base- and component-layer level. See ADR-0002 §2, §4. */
+  --text-*: initial;
+  --text-display: clamp(52px, calc(52px + (66 - 52) * (100vw - 640px) / (1280 - 640)), 66px);
+  --text-h1: clamp(42px, calc(42px + (46 - 42) * (100vw - 640px) / (1280 - 640)), 46px);
+  --text-h2: 34px;
+  --text-h3: 21px;
+  --text-body-l: 17px;
+  --text-body: 15px;
+
+  /* Caption — restrict to non-essential metadata (timestamps, attribution, fine print).
+     Never primary content, form labels, or actionable text — below the 14px conventional floor. */
+  --text-caption: 12.5px;
+
+  --gradient-accent: linear-gradient(120deg, var(--color-accent) 0%, var(--color-gradient-to) 100%);
+  --glow-amber: radial-gradient(circle 100px at 50% 50%, rgb(255 185 0 / 40%) 0%, rgb(255 185 0 / 0%) 70%);
+}
+
+@layer base {
+  body {
+    font-family: var(--font-sora);
+    font-weight: 400;
+    font-size: var(--text-body);
+  }
+
+  h1 {
+    font-family: var(--font-syne);
+    font-weight: 600;
+    font-size: var(--text-h1);
+    color: var(--color-ink-heading);
+  }
+
+  h2 {
+    font-family: var(--font-syne);
+    font-weight: 600;
+    font-size: var(--text-h2);
+    color: var(--color-ink-heading);
+  }
+
+  h3 {
+    font-family: var(--font-syne);
+    font-weight: 600;
+    font-size: var(--text-h3);
+    color: var(--color-ink-heading);
+  }
+
+  p {
+    font-family: var(--font-sora);
+    font-weight: 400;
+    font-size: var(--text-body);
+    color: var(--color-ink-body);
+  }
+}
+
+/* Type-scale utilities — `@utility` (Tailwind v4) registers in the utilities
+   layer directly, replacing the auto-generated single-property utility that
+   `--text-*` tokens otherwise produce. Each utility sets family + weight + size
+   together so engineers can apply a visual level independent of semantic level. */
+@utility text-display {
+  font-family: var(--font-syne);
+  font-weight: 600;
+  font-size: var(--text-display);
+}
+
+@utility text-h1 {
+  font-family: var(--font-syne);
+  font-weight: 600;
+  font-size: var(--text-h1);
+}
+
+@utility text-h2 {
+  font-family: var(--font-syne);
+  font-weight: 600;
+  font-size: var(--text-h2);
+}
+
+@utility text-h3 {
+  font-family: var(--font-syne);
+  font-weight: 600;
+  font-size: var(--text-h3);
+}
+
+@utility text-body-l {
+  font-family: var(--font-sora);
+  font-weight: 400;
+  font-size: var(--text-body-l);
+}
+
+@utility text-body {
+  font-family: var(--font-sora);
+  font-weight: 400;
+  font-size: var(--text-body);
+}
+
+@utility text-caption {
+  font-family: var(--font-sora);
+  font-weight: 400;
+  font-size: var(--text-caption);
+}
+
+@layer components {
+  .bg-gradient-accent {
+    background-image: var(--gradient-accent);
+  }
+
+  .bg-glow-amber {
+    background-image: var(--glow-amber);
+  }
+}
+
+/* Universal reduced-motion reset — respects OS-level user preference.
+   Any future token-based motion inherits this by default. See ADR-0002.
+   NOTE: covers CSS animations, transitions, scroll-behavior, scroll-snap.
+   Does NOT cover JS-driven animation (requestAnimationFrame, GSAP, Lottie,
+   SVG SMIL, autoplay video/GIF) — those paths must check
+   `window.matchMedia('(prefers-reduced-motion: reduce)')` themselves. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-snap-type: none !important;
+  }
+
+  html {
+    scroll-behavior: auto !important;
+  }
+}

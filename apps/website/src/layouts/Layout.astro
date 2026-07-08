@@ -1,0 +1,68 @@
+---
+/*
+ * Site-wide scaffolding — every route renders through this Layout.
+ *
+ * Responsibilities (always-on, regardless of `chrome`):
+ *   1. Skip-link as the first focusable element in <body> (a11y AC).
+ *   2. <main id="main"> wrapper around <slot /> — the canonical skip-link
+ *      target. Pages render their content directly into the slot; no
+ *      per-page <main> or id="main" discipline.
+ *
+ * `chrome?: boolean = true` toggles the marketing Header/Footer around the
+ * <main> wrapper. Showcase Surfaces under `/internal/*` opt out via
+ * `chrome={false}` so reviewers see the primitives without the marketing
+ * chrome on top. The `data-chrome="on"|"off"` body attribute mirrors the
+ * prop for DevTools / CSS-only debug. See ADR-0005 and apps/website/
+ * CONTEXT.md §Site Chrome.
+ */
+import { Font } from 'astro:assets';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+  noindex?: boolean;
+  chrome?: boolean;
+}
+
+const {
+  title,
+  description = 'trinitywizards.com',
+  noindex = false,
+  chrome = true,
+} = Astro.props;
+const locale = Astro.currentLocale ?? 'en-GB';
+---
+
+<!doctype html>
+<html lang={locale}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex,nofollow" />}
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192x192.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon-180x180.png" />
+    <Font cssVariable="--font-sora" preload />
+    <Font cssVariable="--font-syne" preload />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+  </head>
+  <body data-chrome={chrome ? 'on' : 'off'} class="min-h-screen bg-bg text-ink-body antialiased">
+    <a
+      href="#main"
+      class="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:left-2 focus-visible:top-2 focus-visible:z-50 focus-visible:rounded-btn focus-visible:bg-surface focus-visible:px-3 focus-visible:py-2 focus-visible:text-ink-heading focus-visible:outline-2 focus-visible:outline-ink-heading"
+    >
+      Skip to content
+    </a>
+    {chrome && <Header />}
+    <main id="main">
+      <slot />
+    </main>
+    {chrome && <Footer />}
+  </body>
+</html>

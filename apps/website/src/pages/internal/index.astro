@@ -1,0 +1,57 @@
+---
+/*
+ * /internal — Showcase Surface index. Lists the two surfaces so reviewers
+ * land on one URL and follow links. Same INCLUDE_DESIGN_TOKENS gate as the
+ * individual surfaces (ADR-0002 §8).
+ */
+import { INCLUDE_DESIGN_TOKENS } from "astro:env/server";
+import Layout from "../../layouts/Layout.astro";
+
+if (INCLUDE_DESIGN_TOKENS !== "1") {
+  return new Response(null, { status: 404 });
+}
+
+const surfaces = [
+  {
+    href: "/internal/design-tokens",
+    label: "Design tokens",
+    note: "Every Design Token with sample + WCAG contrast matrix.",
+  },
+  {
+    href: "/internal/primitives",
+    label: "UI primitives",
+    note: "Every UI Primitive in every variant × state.",
+  },
+  {
+    href: "/internal/chrome",
+    label: "Chrome",
+    note: "Header + Footer in every state — unscrolled / scrolled+blur / drawer-open / on-light / on-dark / EN-only caption.",
+  },
+];
+---
+
+<Layout
+  title="Internal surfaces · nd8.ai"
+  description="Showcase Surface index — dev/preview only"
+  noindex
+  chrome={false}
+>
+  <div class="mx-auto max-w-3xl px-4 py-7">
+    <h1>Internal surfaces</h1>
+    <ul class="mt-3 flex flex-col gap-2">
+      {
+        surfaces.map((s) => (
+          <li>
+            <a
+              href={s.href}
+              class="inline-flex flex-col rounded-card border border-border bg-surface p-3 hover:border-ink-heading focus-visible:outline-2 focus-visible:outline-offset-[2px] focus-visible:outline-ink-heading"
+            >
+              <span class="text-body font-semibold text-ink-heading">{s.label}</span>
+              <span class="text-caption text-ink-muted">{s.note}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</Layout>

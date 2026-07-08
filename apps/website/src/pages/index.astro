@@ -1,0 +1,29 @@
+---
+import { Image } from "astro:assets";
+import Layout from "../layouts/Layout.astro";
+import logo from "../assets/logo-black.png";
+---
+
+<Layout title="trinitywizards.com">
+  <section
+    class="relative flex min-h-dvh flex-col items-center justify-center px-4"
+  >
+    <div class="mx-auto flex max-w-3xl flex-col items-center py-7">
+      <Image
+        src={logo}
+        alt="trinitywizards.com"
+        widths={[480, 800]}
+        sizes="(min-width: 640px) 480px, 80vw"
+        class="h-auto w-full max-w-md"
+      />
+      <p class="mt-4 text-body-l">Coming soon.</p>
+    </div>
+    <div
+      data-scroll-sentinel
+      aria-hidden="true"
+      class="absolute bottom-0 h-px w-full"
+    >
+    </div>
+  </section>
+  <div class="min-h-dvh bg-bg-alt" aria-hidden="true"></div>
+</Layout>

@@ -1,0 +1,13 @@
+---
+/*
+ * 404 (EN) — Astro emits /404.html from this file (special filename
+ * convention). Served by CloudFront via the errorResponses mapping in
+ * infra/lib/constructs/website-distribution.ts: S3 returns 403 on missing
+ * private-bucket keys, CloudFront rewrites that to HTTP 404 + this body.
+ *
+ * Locale-aware body lives in NotFoundPage so /ms/404 reuses the same shell.
+ */
+import NotFoundPage from "../components/NotFoundPage.astro";
+---
+
+<NotFoundPage />

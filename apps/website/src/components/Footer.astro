@@ -1,0 +1,278 @@
+---
+/*
+ * Site-wide Footer — dark-themed lockup + 4-column nav + bottom row.
+ *
+ * Layout (lg+): 5-column grid — logo+tagline column (1.4×) followed by four
+ * equal-width nav columns. Below lg the grid collapses to a single column
+ * stack so each section reads top-to-bottom on mobile. The full container is
+ * a single `<footer>` landmark (contentinfo); the four link columns share
+ * one `<nav aria-label="Footer">` so AT announces a single landmark, not
+ * four separate ones. Column titles are `<h2>` (not `<h3>`) so the Footer
+ * is robust against pages that emit only an `<h1>` — `h1 → h3` would skip
+ * a level (WCAG 1.3.1 advisory); `h1 → h2` always lands cleanly.
+ *
+ * Dark theme — first dark surface on the site. Background is `bg-ink-heading`
+ * (#121820) per Figma node 14:512. All text colours are `white` with alpha
+ * to ride above the AA contrast bar on a single base background (no token
+ * sprawl for tints that exist only here). Body links at /70 → 12.4:1 AA AAA
+ * normal; muted captions at /60 → 10.5:1; inert links at /40 → 7.0:1 still
+ * AA — chosen because disabled UI is exempt from SC 1.4.3 but we keep it
+ * readable so the placeholder copy isn't ignored. Headings are pure white.
+ * The divider above the bottom row is `border-white/10` — decorative, not
+ * subject to AA contrast.
+ *
+ * Locale-routing — Product column items use `localeHref()` so they mirror
+ * into `/ms/<slug>` for MS visitors (matches the Header's nav convention).
+ * Resources column items are unprefixed paths per Design Brief §IA — those
+ * pages are permanently English (encoded by `isEnOnlyPath()`). The external
+ * Trinity Wizards link opens in a new tab with the standard `noopener
+ * noreferrer` pair. The LanguageSwitcher in the bottom row uses
+ * `tone="on-dark"` and does NOT pass `enOnly` — the footer always offers
+ * both locales regardless of which page renders it (footer is the same
+ * locale-toggle exit on every surface, including the EN-only pages).
+ *
+ * Inert links (Connect column) — LinkedIn and Email are v1 placeholders
+ * (Q10 grilling decision in the parent Story). Rendered as
+ * `<span aria-disabled tabindex={-1}>` to match the Button.astro inert-
+ * anchor convention: `<a href="#">` would be a pointer-click footgun
+ * (browser would scroll to top on activation). The TODO comments below
+ * mark the swap sites — replace each `<span>…</span>` with `<a href={url}>
+ * …</a>` when the real URL exists, no other change needed. Flag the
+ * deviation from the Task body's `<a href="#">` literal on the PR.
+ *
+ * MS copy — column titles, link labels, tagline, attribution, and
+ * copyright follow the placeholder-translation convention from Header.astro
+ * (sufficient to validate the long-MS-translation AC under Story #15's
+ * Failure-modes section). Final copy review can refine wording without
+ * touching structure.
+ *
+ * See ADR-0005 §3 (locale helpers) and apps/website/CONTEXT.md §Site Chrome.
+ */
+import { Image } from "astro:assets";
+
+import logoLight from "../assets/logo.png";
+import LanguageSwitcher from "./ui/LanguageSwitcher.astro";
+import { localeHref, type Locale } from "../lib/i18n";
+
+const currentLocale = (Astro.currentLocale ?? "en-GB") as Locale;
+const isMs = currentLocale === "ms-MY";
+
+type FooterLink =
+  | { kind: "internal"; href: string; en: string; ms: string }
+  | { kind: "en-only"; href: string; en: string; ms: string }
+  | { kind: "external"; href: string; en: string; ms: string }
+  | { kind: "inert"; en: string; ms: string };
+
+interface FooterColumn {
+  id: string;
+  en: string;
+  ms: string;
+  links: FooterLink[];
+}
+
+const COLUMNS: ReadonlyArray<FooterColumn> = [
+  {
+    id: "product",
+    en: "Product",
+    ms: "Produk",
+    links: [
+      { kind: "internal", href: "/use-cases", en: "Use Cases", ms: "Kes Guna" },
+      { kind: "internal", href: "/developers", en: "Developers", ms: "Developers" },
+      { kind: "internal", href: "/pricing", en: "Pricing", ms: "Harga" },
+      { kind: "internal", href: "/book-a-demo", en: "Book a Demo", ms: "Tempah Demo" },
+    ],
+  },
+  {
+    id: "resources",
+    en: "Resources",
+    ms: "Resources",
+    links: [
+      { kind: "en-only", href: "/developers#architecture", en: "Architecture", ms: "Architecture" },
+      { kind: "en-only", href: "/comparison", en: "Comparison", ms: "Comparison" },
+      { kind: "en-only", href: "/glossary", en: "Glossary", ms: "Glossary" },
+    ],
+  },
+  {
+    id: "company",
+    en: "Company",
+    ms: "Syarikat",
+    links: [
+      { kind: "internal", href: "/about", en: "About", ms: "Tentang" },
+      { kind: "external", href: "https://trinitywizards.com", en: "Trinity Wizards", ms: "Trinity Wizards" },
+    ],
+  },
+  {
+    id: "connect",
+    en: "Connect",
+    ms: "Hubung",
+    links: [
+      { kind: "inert", en: "LinkedIn", ms: "LinkedIn" },
+      { kind: "inert", en: "Email", ms: "Emel" },
+    ],
+  },
+];
+
+function resolveHref(link: FooterLink): string | undefined {
+  switch (link.kind) {
+    case "internal":
+      return localeHref(link.href, currentLocale);
+    case "en-only":
+    case "external":
+      return link.href;
+    case "inert":
+      return undefined;
+  }
+}
+
+const homeHref = localeHref("/", currentLocale);
+
+const tagline = isMs
+  ? "AI perbualan yang menyiapkan kerja — terpasang dalam stack anda, diaudit dari hujung ke hujung."
+  : "Conversational AI that does the job — wired into your stack, audited end to end.";
+
+const productOf = isMs ? "Produk daripada" : "A product of";
+
+const copyright = isMs
+  ? "© 2026 Trinity Wizards. Hak cipta terpelihara."
+  : "© 2026 Trinity Wizards. All rights reserved.";
+
+const homeLabel = isMs ? "TRINITY WIZARDS — Laman utama" : "TRINITY WIZARDS — Home";
+---
+
+<footer class="bg-ink-heading text-white">
+  <div class="mx-auto max-w-7xl px-5 pt-7 pb-5">
+    <div
+      class:list={[
+        "grid grid-cols-1 gap-5 border-b border-white/10 pb-5",
+        "lg:grid-cols-[1.4fr_4fr]",
+      ]}
+    >
+      <div class="flex flex-col gap-2">
+        <a
+          href={homeHref}
+          aria-label={homeLabel}
+          class:list={[
+            "inline-flex min-h-[44px] items-center self-start",
+            "rounded-btn",
+            "focus-visible:outline-2 focus-visible:outline-offset-[2px] focus-visible:outline-white",
+          ]}
+        >
+          <Image
+            src={logoLight}
+            alt="TRINITY WIZARDS"
+            widths={[180, 360]}
+            sizes="180px"
+            class="h-3 w-auto"
+          />
+        </a>
+        <p class="max-w-[240px] text-caption leading-[1.6] text-white/65">
+          {tagline}
+        </p>
+        <p class="pt-1 text-[11px] uppercase tracking-[0.2px] text-white/50">
+          {productOf} <span class="text-white/70">TRINITY WIZARDS</span>
+        </p>
+      </div>
+
+      <nav
+        aria-label={isMs ? "Pautan footer" : "Footer"}
+        class:list={[
+          "grid grid-cols-1 gap-5",
+          "sm:grid-cols-2",
+          "lg:grid-cols-4",
+        ]}
+      >
+        {
+          COLUMNS.map((col) => {
+            const titleId = `footer-${col.id}`;
+            return (
+              <section aria-labelledby={titleId} class="flex flex-col gap-2">
+                <h2
+                  id={titleId}
+                  class:list={[
+                    "text-[13px] font-semibold uppercase leading-none tracking-[0.3px] text-white",
+                  ]}
+                >
+                  {isMs ? col.ms : col.en}
+                </h2>
+                <ul class="flex flex-col gap-1">
+                  {col.links.map((link) => {
+                    const label = isMs ? link.ms : link.en;
+                    const baseClasses = [
+                      "inline-flex min-h-[44px] items-center self-start",
+                      "rounded-btn",
+                      "text-body leading-none",
+                      "transition-colors",
+                    ];
+                    if (link.kind === "inert") {
+                      // TODO: replace with real LinkedIn / Email URL when one exists —
+                      // swap <span> for <a href={url}> and drop aria-disabled + tabindex.
+                      return (
+                        <li>
+                          <span
+                            aria-disabled="true"
+                            tabindex={-1}
+                            class:list={[
+                              ...baseClasses,
+                              "cursor-not-allowed text-white/40",
+                            ]}
+                          >
+                            {label}
+                          </span>
+                        </li>
+                      );
+                    }
+                    const href = resolveHref(link)!;
+                    const isExternal = link.kind === "external";
+                    return (
+                      <li>
+                        <a
+                          href={href}
+                          {...(isExternal
+                            ? { target: "_blank", rel: "noopener noreferrer" }
+                            : {})}
+                          class:list={[
+                            ...baseClasses,
+                            "gap-1",
+                            "text-white/70 hover:text-white",
+                            "focus-visible:outline-2 focus-visible:outline-offset-[2px] focus-visible:outline-white",
+                          ]}
+                        >
+                          {label}
+                          {isExternal && (
+                            <svg
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              aria-hidden="true"
+                              class="size-2 shrink-0"
+                            >
+                              <path
+                                d="M7 17 17 7M9 7h8v8"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                              />
+                            </svg>
+                          )}
+                        </a>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            );
+          })
+        }
+      </nav>
+    </div>
+
+    <div
+      class:list={[
+        "flex flex-wrap items-center justify-between gap-3 pt-4",
+      ]}
+    >
+      <p class="text-caption text-white/60">{copyright}</p>
+      <LanguageSwitcher tone="on-dark" />
+    </div>
+  </div>
+</footer>

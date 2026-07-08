@@ -1,5 +1,9 @@
 {
   "mcpServers": {
+    "figmaDevMode": {
+      "type": "http",
+      "url": "http://127.0.0.1:3845/mcp"
+    },
     "playwright": {
       "type": "stdio",
       "command": "npx",

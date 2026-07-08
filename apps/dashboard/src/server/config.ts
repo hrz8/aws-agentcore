@@ -8,6 +8,7 @@ dotenv.config({ quiet: true });
 
 export const RegistrySource = {
   S3Yaml: 's3-yaml',
+  LocalYaml: 'local-yaml',
   DbPostgres: 'db-postgres',
 } as const;
 export type RegistrySource = typeof RegistrySource[keyof typeof RegistrySource];
@@ -36,6 +37,7 @@ const envSchema = z.object({
   REGISTRY_SOURCE: z.enum(RegistrySource).default(RegistrySource.S3Yaml),
   REGISTRY_S3_KEY: z.string().min(1).default('registry/agents.yaml'),
   REGISTRY_DB_URL: z.string().min(1).optional(),
+  REGISTRY_LOCAL_YAML_PATH: z.string().min(1).optional(),
   WIDGET_DEMO_URL: z.url().default('http://localhost:4174/widget-demo.html'),
   MIDDLEWARE_URL: z.url().default('http://localhost:7890'),
 
@@ -77,6 +79,7 @@ export const {
   REGISTRY_SOURCE,
   REGISTRY_S3_KEY,
   REGISTRY_DB_URL,
+  REGISTRY_LOCAL_YAML_PATH,
   WIDGET_DEMO_URL,
   MIDDLEWARE_URL,
 } = ENV;

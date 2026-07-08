@@ -15,6 +15,10 @@ node_modules
 # Testing
 coverage
 
+# Local data (SQLite dbs, etc.)
+.data/
+data/
+
 # Turbo
 .turbo
 

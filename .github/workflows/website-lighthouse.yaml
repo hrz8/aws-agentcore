@@ -1,0 +1,65 @@
+# Lighthouse CI smoke — build apps/website and run @lhci/cli against the
+# built dist/. Website-scoped by path filter; does not run for changes in
+# other apps. LHCI config lives at apps/website/lighthouserc.cjs and
+# posts a status check on the PR via LHCI_GITHUB_TOKEN.
+name: Website Lighthouse
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'apps/website/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/website-lighthouse.yaml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/website/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/website-lighthouse.yaml'
+
+concurrency:
+  group: lighthouse-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: Lighthouse smoke
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      statuses: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build website
+        run: pnpm --filter website build
+
+      - name: Run Lighthouse CI
+        run: pnpm --filter website exec lhci autorun
+        env:
+          LHCI_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload lhci artifacts
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: lhci-report
+          path: apps/website/.lighthouseci
+          if-no-files-found: ignore
+          retention-days: 14

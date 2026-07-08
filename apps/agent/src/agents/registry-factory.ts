@@ -4,10 +4,12 @@ import {
   type ParseOptions,
   type RegistryRepository,
 } from '@repo/registry';
+import { LocalYamlRegistryRepository } from '@repo/registry/local-yaml';
 
 import {
   AWS_REGION,
   REGISTRY_DB_URL,
+  REGISTRY_LOCAL_YAML_PATH,
   REGISTRY_S3_KEY,
   REGISTRY_SOURCE,
   RegistrySource,
@@ -29,6 +31,19 @@ export async function createRegistryRepository(): Promise<RegistryRepository> {
         bucket: UPLOADS_BUCKET,
         key: REGISTRY_S3_KEY,
         region: AWS_REGION,
+        parseOpts,
+      });
+      await repo.refresh();
+      return repo;
+    }
+    case RegistrySource.LocalYaml: {
+      if (!REGISTRY_LOCAL_YAML_PATH) {
+        throw new Error(
+          `REGISTRY_SOURCE=${RegistrySource.LocalYaml} requires REGISTRY_LOCAL_YAML_PATH to be set`,
+        );
+      }
+      const repo = new LocalYamlRegistryRepository({
+        path: REGISTRY_LOCAL_YAML_PATH,
         parseOpts,
       });
       await repo.refresh();

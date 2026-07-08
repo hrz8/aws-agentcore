@@ -58,6 +58,16 @@ function seedForProvider(next: ModelDef['provider'], prev: ModelDef): ModelDef {
   }
 }
 
+function isValidOptionalUrl(value: string | undefined): boolean {
+  if (value === undefined || value === '') return true;
+  try {
+    new URL(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function readNumericOpts(def: ModelDef): { maxTokens?: number; temperature?: number } {
   const src =
     def.provider === ModelProvider.Bedrock ? def.bedrock
@@ -94,6 +104,7 @@ export function ModelEditor() {
     if (!draft) return false;
     if (readModelId(draft).trim().length === 0) return false;
     if (draft.provider !== ModelProvider.Bedrock && readApiKey(draft).trim().length === 0) return false;
+    if (draft.provider === ModelProvider.OpenAI && !isValidOptionalUrl(draft.openai.baseUrl)) return false;
     return true;
   }, [draft]);
   const canSave = dirty && draftValid && !update.isPending;
@@ -428,6 +439,13 @@ function OpenAIFields({
           disabled={disabled}
         />
       </div>
+      <div className="md:col-span-2">
+        <BaseUrlField
+          value={value.baseUrl}
+          onChange={(baseUrl) => onChange({ ...value, baseUrl })}
+          disabled={disabled}
+        />
+      </div>
       <NumberField
         label={m.model_max_tokens_label()}
         value={value.maxTokens}
@@ -445,6 +463,34 @@ function OpenAIFields({
         max={2}
         step={0.1}
       />
+    </div>
+  );
+}
+
+function BaseUrlField({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: string | undefined;
+  onChange: (v: string | undefined) => void;
+  disabled: boolean;
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      <Label>{m.model_base_url_label()}</Label>
+      <Input
+        value={value ?? ''}
+        onChange={(e) => {
+          const v = e.target.value;
+          onChange(v === '' ? undefined : v);
+        }}
+        placeholder={m.model_base_url_placeholder()}
+        disabled={disabled}
+        spellCheck={false}
+        className="font-mono text-xs"
+      />
+      <p className="text-[11px] text-muted-foreground">{m.model_base_url_hint()}</p>
     </div>
   );
 }

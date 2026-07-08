@@ -1,0 +1,77 @@
+---
+/*
+ * SectionHeading — eyebrow + title + lede.
+ *
+ * Semantic level (h1/h2/h3) and visual size (`visualLevel`) are decoupled so
+ * a page can render a semantic <h2> at Display size (or vice versa) without
+ * breaking the document outline. See ADR-0003 §2 / §7.
+ *
+ * Visual-level utility is resolved via a const lookup record per ADR-0003 §5
+ * (not a dynamic `text-${level}` interpolation — dynamic class names hide
+ * from Tailwind's content scanner; the lookup keeps every emitted utility
+ * literal in source).
+ *
+ * Eyebrow is rendered as `ink-heading` text behind a `border-l-2 border-accent`
+ * left-stripe — the Figma mid-fi uses amber-tinted eyebrow text, but
+ * `accent-deep` on bg / bg-alt / surface fails WCAG AA (~2.3:1). The stripe
+ * preserves the amber signal while keeping text contrast clear of AA. The
+ * `border-2` namespace is independent of the `--spacing-*` scale that
+ * ADR-0002 §3 overrides — 2px stays 2px here.
+ *
+ * Lede uses `ink-body` (not `ink-muted`): `ink-muted` (#7A7468) on `bg`
+ * (#FDF9F2) is 4.48:1 at 17px regular — narrowly fails SC 1.4.3 (≥4.5:1).
+ * `ink-body` clears AAA on every documented background.
+ */
+
+type Level = 1 | 2 | 3;
+type VisualLevel = 'display' | 'h1' | 'h2' | 'h3';
+
+interface Props {
+  eyebrow?: string;
+  title: string;
+  level?: Level;
+  visualLevel?: VisualLevel;
+  class?: string;
+}
+
+const {
+  eyebrow,
+  title,
+  level = 2,
+  visualLevel,
+  class: className = '',
+} = Astro.props;
+
+const levelUtility = {
+  1: 'text-h1',
+  2: 'text-h2',
+  3: 'text-h3',
+} as const;
+
+const visualLevelUtility = {
+  display: 'text-display',
+  h1: 'text-h1',
+  h2: 'text-h2',
+  h3: 'text-h3',
+} as const;
+
+const headingUtility = visualLevel ? visualLevelUtility[visualLevel] : levelUtility[level];
+---
+
+<div class:list={['flex flex-col gap-1', className]}>
+  {eyebrow && (
+    <span class="inline-flex items-center border-l-2 border-accent pl-2 text-caption font-semibold uppercase tracking-widest text-ink-heading">
+      {eyebrow}
+    </span>
+  )}
+
+  {level === 1 && <h1 class:list={[headingUtility, 'text-ink-heading']}>{title}</h1>}
+  {level === 2 && <h2 class:list={[headingUtility, 'text-ink-heading']}>{title}</h2>}
+  {level === 3 && <h3 class:list={[headingUtility, 'text-ink-heading']}>{title}</h3>}
+
+  {Astro.slots.has('lede') && (
+    <div class="text-body-l text-ink-body">
+      <slot name="lede" />
+    </div>
+  )}
+</div>

@@ -17,6 +17,7 @@ catalog:
   "@aws-sdk/s3-request-presigner": ^3.1075.0
   "@smithy/protocol-http": ^5.5.1
   "@smithy/signature-v4": ^5.5.1
+  "@tailwindcss/vite": ^4.3.0
   "@testing-library/jest-dom": ^7.0.0
   "@testing-library/react": ^17.0.0
   "@types/cors": ^2.8.19
@@ -25,6 +26,7 @@ catalog:
   "@types/react-dom": ^19.2.0
   "@types/react": ^19.2.0
   "@vitest/coverage-v8": ^4.1.0
+  astro: ^7.0.5
   aws-cdk-lib: 2.260.0
   aws-cdk: 2.1128.1
   cors: ^2.8.6
@@ -35,6 +37,7 @@ catalog:
   pino: ^10.3.0
   react-dom: ^19.2.0
   react: ^19.2.0
+  tailwindcss: ^4.3.0
   tsx: ^4.21.0
   typescript: 6.0.3
   uuid: ^13.0.0

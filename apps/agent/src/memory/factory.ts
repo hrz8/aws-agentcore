@@ -4,6 +4,7 @@ import { MemoryManager } from '@strands-agents/sdk';
 
 import { MEMORY_PROVIDER, MemoryProvider } from '../config.js';
 import { createAgentCoreStores } from './stores/agentcore.js';
+import { createSqliteMemoryStores } from './stores/sqlite/factory.js';
 
 export type CreateMemoryManagerInput = {
   readonly actorId: string;
@@ -15,6 +16,9 @@ export function createMemoryManager(input: CreateMemoryManagerInput): MemoryMana
   switch (MEMORY_PROVIDER) {
     case MemoryProvider.AgentCore:
       stores = createAgentCoreStores(input);
+      break;
+    case MemoryProvider.SQLite:
+      stores = createSqliteMemoryStores(input);
       break;
     case MemoryProvider.None:
       stores = null;

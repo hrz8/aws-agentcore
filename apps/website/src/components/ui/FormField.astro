@@ -1,0 +1,154 @@
+---
+/*
+ * FormField — text | email | tel | select | textarea on native <input>/
+ * <select>/<textarea> (ADR-0004 §1). No custom widgets — mobile-native
+ * <select> wins.
+ *
+ * A11y wiring baked in (Story §Accessibility):
+ *   - `id` derives from required `name` prop (`field-${name}`), deterministic
+ *     across builds (ADR-0003 §10). Override via `id` for multi-step-form
+ *     collisions.
+ *   - <label for={id}> always rendered.
+ *   - The control's aria-describedby always lists `{id}-error {id}-helper`
+ *     so screen readers find them once populated.
+ *   - Error span is always rendered with role="alert" + aria-live="polite"
+ *     — empty by default so the live region exists in the DOM before
+ *     validation fires (ADR-0004 §3). Error population is the form-owning
+ *     page script's job; this primitive ships the contract only.
+ *   - aria-invalid="true" when `error` is set.
+ *   - Helper text only renders without an error (avoid double announcement);
+ *     the helper id is still referenced by aria-describedby — a dangling
+ *     reference is benign and means we don't need to keep an empty span in
+ *     the layout.
+ */
+
+type FieldType = 'text' | 'email' | 'tel' | 'select' | 'textarea';
+
+interface Option {
+  value: string;
+  label: string;
+}
+
+interface Props {
+  name: string;
+  label: string;
+  type?: FieldType;
+  id?: string;
+  value?: string;
+  placeholder?: string;
+  helper?: string;
+  error?: string;
+  disabled?: boolean;
+  required?: boolean;
+  autocomplete?: string;
+  options?: Option[];
+  rows?: number;
+  class?: string;
+}
+
+const {
+  name,
+  label,
+  type = 'text',
+  id: idProp,
+  value,
+  placeholder,
+  helper,
+  error,
+  disabled = false,
+  required = false,
+  autocomplete,
+  options = [],
+  rows = 4,
+  class: className = '',
+} = Astro.props;
+
+const id = idProp ?? `field-${name}`;
+const errorId = `${id}-error`;
+const helperId = `${id}-helper`;
+const hasError = Boolean(error);
+
+const controlBase = [
+  'block w-full',
+  'rounded-btn border bg-surface',
+  'px-2 py-2',
+  'text-body text-ink-body',
+  'transition-colors duration-150',
+  'focus-visible:outline-2 focus-visible:outline-offset-[2px] focus-visible:outline-ink-heading',
+  'placeholder:text-ink-muted',
+  'disabled:cursor-not-allowed disabled:opacity-60',
+];
+
+const borderClasses = hasError ? 'border-fail' : 'border-border';
+
+// Textarea sizes via `rows`; min-h floor only constrains single-line controls.
+const heightClasses = type === 'textarea' ? 'leading-snug resize-y' : 'min-h-[44px]';
+
+const controlClasses = [...controlBase, borderClasses, heightClasses];
+
+const ariaDescribedBy = `${errorId} ${helperId}`;
+---
+
+<div class:list={['flex flex-col gap-1', className]}>
+  <label for={id} class="text-caption font-semibold text-ink-heading">
+    {label}
+    {required && <span aria-hidden="true" class="text-ink-muted"> *</span>}
+  </label>
+
+  {type === 'select' ? (
+    <select
+      id={id}
+      name={name}
+      disabled={disabled}
+      required={required}
+      autocomplete={autocomplete}
+      aria-invalid={hasError ? 'true' : undefined}
+      aria-describedby={ariaDescribedBy}
+      class:list={controlClasses}
+    >
+      {placeholder && (
+        <option value="" disabled selected={value === undefined || value === ''}>
+          {placeholder}
+        </option>
+      )}
+      {options.map((opt) => (
+        <option value={opt.value} selected={value === opt.value}>{opt.label}</option>
+      ))}
+    </select>
+  ) : type === 'textarea' ? (
+    <textarea
+      id={id}
+      name={name}
+      rows={rows}
+      disabled={disabled}
+      required={required}
+      placeholder={placeholder}
+      autocomplete={autocomplete}
+      aria-invalid={hasError ? 'true' : undefined}
+      aria-describedby={ariaDescribedBy}
+      class:list={controlClasses}
+    >{value}</textarea>
+  ) : (
+    <input
+      id={id}
+      name={name}
+      type={type}
+      value={value}
+      disabled={disabled}
+      required={required}
+      placeholder={placeholder}
+      autocomplete={autocomplete}
+      aria-invalid={hasError ? 'true' : undefined}
+      aria-describedby={ariaDescribedBy}
+      class:list={controlClasses}
+    />
+  )}
+
+  <span id={errorId} role="alert" aria-live="polite" class="text-caption text-fail">
+    {error}
+  </span>
+
+  {!hasError && helper && (
+    <span id={helperId} class="text-caption text-ink-body">{helper}</span>
+  )}
+</div>

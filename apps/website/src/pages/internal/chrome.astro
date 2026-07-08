@@ -1,0 +1,394 @@
+---
+/*
+ * /internal/chrome — Showcase Surface for the site-wide Header + Footer
+ * shipped across Story #15 (Tasks #20–#23). Renders every documented chrome
+ * state — unscrolled / scrolled+blur / drawer-open / drawer-closed / footer
+ * desktop / footer mobile / LanguageSwitcher × 4 — behind the same
+ * INCLUDE_DESIGN_TOKENS gate as /internal/design-tokens and /internal/
+ * primitives (ADR-0002 §8). Reviewer lands on one URL and verifies every
+ * chrome state in pinned blocks without hunting across routes.
+ *
+ * Why iframes (not inline `<Header />` / `<Footer />`).
+ * Tailwind's responsive utilities (`lg:hidden`, `lg:grid-cols-*`, etc.) are
+ * driven by *viewport* width, not container width — `max-w` wrappers on
+ * this page can't trigger the chrome's mobile-viewport layout. So each
+ * chrome state is embedded via an iframe whose `width` attribute equals
+ * the chrome's intended breakpoint viewport (1280 px for desktop demos,
+ * 375 px for mobile). The iframe's inner viewport drives `lg:` correctly
+ * and the chrome inside renders its real production layout for that
+ * breakpoint regardless of the showcase page's parent viewport.
+ *
+ * The iframes embed `/internal/chrome-frame?demo=…` — a hidden internal
+ * route gated by the same INCLUDE_DESIGN_TOKENS flag. The demo param
+ * dispatches to a target state (`hero`, `scrolled`, `drawer-open`,
+ * `drawer-closed`, `footer`) via a tiny client script in chrome-frame.astro.
+ *
+ * The LanguageSwitcher block stays inline — it has no viewport breakpoints
+ * and the four (tone × enOnly) combinations render correctly at any
+ * container width.
+ *
+ * See parent Story trinitywizards/aisaas-product#15 for AC + audit checklist.
+ */
+import { INCLUDE_DESIGN_TOKENS } from "astro:env/server";
+import Layout from "../../layouts/Layout.astro";
+import LanguageSwitcher from "../../components/ui/LanguageSwitcher.astro";
+
+if (INCLUDE_DESIGN_TOKENS !== "1") {
+  return new Response(null, { status: 404 });
+}
+
+const sections = [
+  { id: "header-unscrolled", label: "Header unscrolled" },
+  { id: "header-scrolled", label: "Header scrolled+blur" },
+  { id: "drawer-open", label: "Mobile drawer open" },
+  { id: "drawer-closed", label: "Mobile drawer closed" },
+  { id: "footer-desktop", label: "Footer desktop" },
+  { id: "footer-mobile", label: "Footer mobile" },
+  { id: "language-switcher", label: "LanguageSwitcher" },
+];
+
+interface FrameProps {
+  demo: "hero" | "scrolled" | "drawer-open" | "drawer-closed" | "footer";
+  width: number;
+  height: number;
+  title: string;
+}
+
+const frames: Record<string, FrameProps> = {
+  headerUnscrolled: {
+    demo: "hero",
+    width: 1280,
+    height: 320,
+    title: "Header — unscrolled, desktop viewport",
+  },
+  headerScrolled: {
+    demo: "scrolled",
+    width: 1280,
+    height: 320,
+    title: "Header — scrolled+blur, desktop viewport",
+  },
+  drawerOpen: {
+    demo: "drawer-open",
+    width: 375,
+    height: 640,
+    title: "Mobile drawer — open, mobile viewport",
+  },
+  drawerClosed: {
+    demo: "drawer-closed",
+    width: 375,
+    height: 220,
+    title: "Mobile drawer — closed, mobile viewport",
+  },
+  footerDesktop: {
+    demo: "footer",
+    width: 1280,
+    height: 420,
+    title: "Footer — desktop viewport",
+  },
+  footerMobile: {
+    demo: "footer",
+    width: 375,
+    height: 720,
+    title: "Footer — mobile viewport",
+  },
+};
+
+const frameSrc = (demo: FrameProps["demo"]) =>
+  `/internal/chrome-frame?demo=${demo}`;
+---
+
+<Layout
+  title="Chrome · nd8.ai"
+  description="Site-wide Header + Footer showcase — dev/preview only"
+  noindex
+  chrome={false}
+>
+  <div class="mx-auto max-w-5xl px-4 py-7">
+    <header class="mb-7">
+      <h1>Chrome</h1>
+      <p class="mt-2 text-ink-body">
+        Source of truth: Figma nodes <code>14:611</code> (Header) and
+        <code>14:512</code> (Footer) under homepage <code>14:677</code> (Story
+        <a
+          class="underline decoration-1 underline-offset-4"
+          href="https://github.com/trinitywizards/aisaas-product/issues/15"
+          rel="noreferrer">#15</a
+        >). Chrome lives in <code>apps/website/src/components/Header.astro</code>
+        and <code>Footer.astro</code>. Dev/preview-only — production builds omit
+        this page via <code>INCLUDE_DESIGN_TOKENS</code>.
+      </p>
+      <p class="mt-2 text-ink-body">
+        Each block embeds the live chrome via an iframe targeting
+        <code>/internal/chrome-frame</code> at the breakpoint viewport that
+        state belongs to (1280 px for desktop demos, 375 px for mobile). The
+        iframes carry their own viewport so Tailwind's <code>lg:</code>
+        responsive utilities fire correctly — i.e. the mobile-viewport
+        chrome reads as mobile regardless of how wide this page is on your
+        screen. Drag-resize iframes via the resize handle on their wrapper
+        to verify intermediate widths.
+      </p>
+      <p class="mt-2 text-ink-body">
+        Interactions inside an iframe (Tab into the drawer, Escape, the
+        hamburger trigger, locale links) ARE live — the chrome's bundled
+        script runs inside each iframe. The drawer-open block opens the
+        drawer via <code>dialog.showModal()</code> on load so the dialog
+        enters the browser top layer with its <code>::backdrop</code>
+        scrim, native focus trap, and Escape-dismiss already wired (Header
+        carries <code>z-40</code>, so a bare <code>[open]</code> attribute
+        would render the drawer occluded — the top-layer placement avoids
+        any z-index arms race). Verify the dismiss interactions there.
+      </p>
+      <nav aria-label="On this page" class="mt-3">
+        <ul class="flex flex-wrap gap-2 text-caption">
+          {
+            sections.map((s) => (
+              <li>
+                <a
+                  href={`#${s.id}`}
+                  class="inline-flex items-center rounded-pill border border-border bg-surface px-2 py-1 text-ink-body hover:bg-bg-alt focus-visible:outline-2 focus-visible:outline-offset-[2px] focus-visible:outline-ink-heading"
+                >
+                  {s.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+    </header>
+
+    {/* ====================== HEADER — UNSCROLLED ============================ */}
+    <section
+      id="header-unscrolled"
+      class="mb-7"
+      aria-labelledby="h-header-unscrolled"
+    >
+      <h2 id="h-header-unscrolled" class="mb-2">Header — unscrolled</h2>
+      <p class="mb-3 text-caption text-ink-body">
+        Default state at desktop viewport — baseline <code>bg-bg/60</code> +
+        <code>backdrop-blur(4px)</code> floating over a tinted hero stand-in.
+        The Scroll Sentinel sits at the bottom of the hero block; the next
+        block shows the state after the sentinel exits the viewport.
+      </p>
+      <div class="chrome-frame-wrapper">
+        <iframe
+          src={frameSrc(frames.headerUnscrolled.demo)}
+          width={frames.headerUnscrolled.width}
+          height={frames.headerUnscrolled.height}
+          title={frames.headerUnscrolled.title}
+          loading="lazy"
+          class="chrome-frame"></iframe>
+      </div>
+    </section>
+
+    {/* ===================== HEADER — SCROLLED ============================== */}
+    <section
+      id="header-scrolled"
+      class="mb-7"
+      aria-labelledby="h-header-scrolled"
+    >
+      <h2 id="h-header-scrolled" class="mb-2">Header — scrolled+blur</h2>
+      <p class="mb-3 text-caption text-ink-body">
+        Same chrome scrolled past the Scroll Sentinel — <code>bg-bg/82</code>
+        + <code>backdrop-blur(8px)</code> + 1px bottom-border in
+        <code>--color-border</code> + a subtle drop shadow. Live behaviour
+        inside the iframe — scroll back to the top to see the unscrolled
+        state return. Contrast against the worst-case underlying-hero colour
+        is covered by <code>apps/website/docs/contrast-matrix.md</code>; no
+        new fg/bg pair introduced by this Task.
+      </p>
+      <div class="chrome-frame-wrapper">
+        <iframe
+          src={frameSrc(frames.headerScrolled.demo)}
+          width={frames.headerScrolled.width}
+          height={frames.headerScrolled.height}
+          title={frames.headerScrolled.title}
+          loading="lazy"
+          class="chrome-frame"></iframe>
+      </div>
+    </section>
+
+    {/* ======================== MOBILE DRAWER — OPEN ========================= */}
+    <section id="drawer-open" class="mb-7" aria-labelledby="h-drawer-open">
+      <h2 id="h-drawer-open" class="mb-2">Mobile drawer — open</h2>
+      <p class="mb-3 text-caption text-ink-body">
+        Mobile-viewport chrome with the drawer opened on load via
+        <code>dialog.showModal()</code>. The chrome behind is in its real
+        mobile layout (TW mark + hamburger) — the iframe is 375 px wide so
+        Tailwind's <code>lg:</code> utilities respond to the iframe's inner
+        viewport rather than this page's. The dim <code>::backdrop</code>
+        scrim, native focus trap, and Escape-dismiss are all live inside
+        this iframe — Tab through to verify focus stays inside the drawer;
+        press Escape to dismiss. Shift+Tab from the host page's first focus
+        before the iframe exits the trap (it operates inside the iframe
+        document, not across the boundary).
+      </p>
+      <div class="chrome-frame-wrapper">
+        <iframe
+          src={frameSrc(frames.drawerOpen.demo)}
+          width={frames.drawerOpen.width}
+          height={frames.drawerOpen.height}
+          title={frames.drawerOpen.title}
+          loading="lazy"
+          class="chrome-frame"></iframe>
+      </div>
+    </section>
+
+    {/* ======================= MOBILE DRAWER — CLOSED ======================== */}
+    <section id="drawer-closed" class="mb-7" aria-labelledby="h-drawer-closed">
+      <h2 id="h-drawer-closed" class="mb-2">Mobile drawer — closed (live)</h2>
+      <p class="mb-3 text-caption text-ink-body">
+        Default mobile-viewport chrome state. Drawer markup is present in
+        the iframe DOM (<code>&lt;dialog&gt;</code>) but hidden until the
+        hamburger trigger calls <code>showModal()</code>. Tap the hamburger
+        to open the drawer with its native focus trap, dim
+        <code>::backdrop</code>, and Escape-dismiss — this is the canonical
+        live drawer reference for the static block above.
+      </p>
+      <div class="chrome-frame-wrapper">
+        <iframe
+          src={frameSrc(frames.drawerClosed.demo)}
+          width={frames.drawerClosed.width}
+          height={frames.drawerClosed.height}
+          title={frames.drawerClosed.title}
+          loading="lazy"
+          class="chrome-frame"></iframe>
+      </div>
+    </section>
+
+    {/* ============================ FOOTER — DESKTOP ========================= */}
+    <section
+      id="footer-desktop"
+      class="mb-7"
+      aria-labelledby="h-footer-desktop"
+    >
+      <h2 id="h-footer-desktop" class="mb-2">Footer — desktop</h2>
+      <p class="mb-3 text-caption text-ink-body">
+        Dark-themed Footer at desktop viewport — 5-column lockup
+        (<code>1.4fr 4fr</code> = logo+tagline column then four equal nav
+        columns). Column titles are <code>&lt;h2&gt;</code> for robust
+        heading hierarchy when the page above emits only an
+        <code>&lt;h1&gt;</code>. LinkedIn + Email Connect-column
+        placeholders render as inert <code>&lt;span aria-disabled="true"
+        tabindex="-1"&gt;</code> — AT announces them non-interactive, no
+        scroll-to-top footgun.
+      </p>
+      <div class="chrome-frame-wrapper">
+        <iframe
+          src={frameSrc(frames.footerDesktop.demo)}
+          width={frames.footerDesktop.width}
+          height={frames.footerDesktop.height}
+          title={frames.footerDesktop.title}
+          loading="lazy"
+          class="chrome-frame"></iframe>
+      </div>
+    </section>
+
+    {/* ============================ FOOTER — MOBILE ========================== */}
+    <section id="footer-mobile" class="mb-7" aria-labelledby="h-footer-mobile">
+      <h2 id="h-footer-mobile" class="mb-2">Footer — mobile</h2>
+      <p class="mb-3 text-caption text-ink-body">
+        Same Footer at mobile viewport (iframe 375 px wide). Tailwind
+        responsive utilities respond to the iframe's inner viewport, so the
+        4-column nav collapses through <code>sm:grid-cols-2</code> down to
+        <code>grid-cols-1</code> and the logo column stacks above the nav
+        group — the production mobile layout, not a horizontally-compressed
+        desktop one. Drag the iframe's resize handle horizontally to verify
+        intermediate column counts.
+      </p>
+      <div class="chrome-frame-wrapper">
+        <iframe
+          src={frameSrc(frames.footerMobile.demo)}
+          width={frames.footerMobile.width}
+          height={frames.footerMobile.height}
+          title={frames.footerMobile.title}
+          loading="lazy"
+          class="chrome-frame"></iframe>
+      </div>
+    </section>
+
+    {/* ========================== LANGUAGE SWITCHER ========================== */}
+    <section
+      id="language-switcher"
+      class="mb-7"
+      aria-labelledby="h-language-switcher"
+    >
+      <h2 id="h-language-switcher" class="mb-2">LanguageSwitcher</h2>
+      <p class="mb-3 text-caption text-ink-body">
+        Segmented EN/MS control — duplicates the standalone primitive in
+        <code>/internal/primitives §LanguageSwitcher</code> but surfaces the
+        four (tone × enOnly) combinations on the actual chrome backdrops so
+        reviewers verify the caption + dimmed-MS read against the same
+        colour the production header / footer / drawer use. Routing wiring
+        (active-locale swap) lands in Epic 10. Caption copy "English only on
+        this page." is the prose choice from the Q11 grilling — replaces
+        the brief's "— for now" hedge that promised future MS the IA
+        contradicts.
+      </p>
+
+      <h3 class="mt-4 mb-2 text-h3">tone="on-light" × default · header / drawer backdrop</h3>
+      <div class="flex flex-col items-start gap-2 rounded-card border border-border bg-bg p-3">
+        <LanguageSwitcher tone="on-light" />
+      </div>
+
+      <h3 class="mt-4 mb-2 text-h3">tone="on-light" × enOnly · caption visible</h3>
+      <div class="flex flex-col items-start gap-2 rounded-card border border-border bg-bg p-3">
+        <LanguageSwitcher tone="on-light" enOnly />
+      </div>
+
+      <h3 class="mt-4 mb-2 text-h3">tone="on-dark" × default · footer backdrop</h3>
+      <div class="flex flex-col items-start gap-2 rounded-card border border-ink-heading bg-ink-heading p-3">
+        <LanguageSwitcher tone="on-dark" />
+      </div>
+
+      <h3 class="mt-4 mb-2 text-h3">tone="on-dark" × enOnly · caption visible</h3>
+      <div class="flex flex-col items-start gap-2 rounded-card border border-ink-heading bg-ink-heading p-3">
+        <LanguageSwitcher tone="on-dark" enOnly />
+      </div>
+
+      <p class="mt-3 text-caption text-ink-body">
+        Triggerable states: hover, focus-visible (Tab in). The active locale
+        is URL-driven outside <code>enOnly</code> — visit
+        <code>/ms/internal/chrome</code> to see MS active. Inside
+        <code>enOnly</code> EN locks active and MS is inert
+        (<code>aria-disabled="true"</code>, <code>tabindex="-1"</code>) with
+        the caption carrying the constraint.
+      </p>
+    </section>
+  </div>
+</Layout>
+
+<style>
+  /*
+   * Iframe wrapper — provides a horizontal scroll surface when the
+   * intended iframe width (e.g. 1280 px for desktop demos) exceeds the
+   * showcase page's container, plus a `resize: horizontal` affordance so
+   * the reviewer can drag the wrapper narrower / wider to verify
+   * intermediate breakpoints inside the iframe.
+   */
+
+  /*
+   * `width: fit-content` makes the wrapper hug the iframe instead of
+   * expanding to full-width (a `block`-level <div> with `overflow: auto`
+   * defaults to 100% of its parent). `max-width: 100%` caps the wrapper
+   * at the section width when the iframe is wider than the showcase
+   * column (e.g. 1280 px iframe inside a `max-w-5xl` container), where
+   * `overflow: auto` then provides horizontal scrolling. `resize:
+   * horizontal` lets the reviewer drag the wrapper wider / narrower to
+   * verify intermediate viewport widths inside the iframe.
+   */
+  .chrome-frame-wrapper {
+    width: fit-content;
+    max-width: 100%;
+    overflow: auto;
+    resize: horizontal;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    background-color: var(--color-bg);
+  }
+
+  .chrome-frame {
+    display: block;
+    border: 0;
+    background-color: var(--color-bg);
+  }
+</style>

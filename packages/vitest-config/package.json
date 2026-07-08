@@ -7,6 +7,7 @@
   "engines": {
     "node": ">=24"
   },
+  "packageManager": "pnpm@10.34.4",
   "exports": {
     "./base": "./base.ts",
     "./node": "./node.ts",

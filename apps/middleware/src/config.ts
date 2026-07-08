@@ -11,6 +11,7 @@ export type AgentMode = typeof AgentMode[keyof typeof AgentMode];
 
 export const RegistrySource = {
   S3Yaml: 's3-yaml',
+  LocalYaml: 'local-yaml',
   DbPostgres: 'db-postgres',
 } as const;
 export type RegistrySource = typeof RegistrySource[keyof typeof RegistrySource];
@@ -30,7 +31,7 @@ const envSchema = z.object({
     .default(8080),
   AWS_REGION: z.string().min(1).default('us-east-1'),
   CORS_ORIGIN: z.string()
-    .default('http://localhost:3456,http://localhost:5200')
+    .default('http://localhost:3456,http://localhost:8765')
     .transform((v) => v.split(',').map((s) => s.trim()).filter(Boolean)),
 
   AGENT_MODE: z.enum(AgentMode).default(AgentMode.Plain),
@@ -43,6 +44,7 @@ const envSchema = z.object({
   REGISTRY_SOURCE: z.enum(RegistrySource).default(RegistrySource.S3Yaml),
   REGISTRY_S3_KEY: z.string().min(1).default('registry.yaml'),
   REGISTRY_DB_URL: z.string().optional(),
+  REGISTRY_LOCAL_YAML_PATH: z.string().min(1).optional(),
   UPLOADS_BUCKET: z.string().optional(),
 
   RUN_IN_LAMBDA: z.union([z.string(), z.boolean()])
@@ -75,6 +77,7 @@ export const {
   REGISTRY_SOURCE,
   REGISTRY_S3_KEY,
   REGISTRY_DB_URL,
+  REGISTRY_LOCAL_YAML_PATH,
   UPLOADS_BUCKET,
   RUN_IN_LAMBDA,
   RUNNER_TYPE,

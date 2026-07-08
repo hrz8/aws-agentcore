@@ -1,0 +1,91 @@
+# Repo-wide CI — lint + typecheck on every PR/push to main, plus an OIDC
+# smoke check to confirm the runner can assume the CDK role.
+#
+# `pnpm lint` walks the turbo `lint` task; every workspace either has a
+# real lint (apps/website: stylelint + custom class-allowlist) or a stub
+# (`echo 'no lint targets' && exit 0`). ESLint is deliberately absent
+# repo-wide — see apps/website/scripts/run-lint.mjs for the pattern.
+name: CI
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+  push:
+    branches:
+      - main
+
+jobs:
+  determine-role:
+    name: Determine Role
+    runs-on: ubuntu-latest
+    outputs:
+      role: ${{ steps.set-role.outputs.role }}
+    steps:
+      - id: set-role
+        run: |
+          ROLE="${{ vars.AWS_ROLE_CDK }}"
+
+          echo "Resolved role: $ROLE"
+          echo "role=$ROLE" >> "$GITHUB_OUTPUT"
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+
+  auth-check:
+    name: Verify AWS OIDC Auth
+    needs: determine-role
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Print trigger info
+        run: |
+          echo "Trigger: ${{ github.event_name }}"
+          echo "Ref:     ${{ github.ref }}"
+          echo "Actor:   ${{ github.actor }}"
+          echo "Repo:    ${{ github.repository }}"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/${{ needs.determine-role.outputs.role }}
+          role-session-name: githubactions-ci
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Verify assumed identity
+        run: |
+          echo "--- aws sts get-caller-identity ---"
+          aws sts get-caller-identity

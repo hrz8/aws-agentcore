@@ -36,10 +36,11 @@ export class Agentcore extends Construct {
       UPLOADS_BUCKET: props.uploadsBucket.bucketName,
       REGISTRY_SOURCE: 's3-yaml',
       KB_ID: props.kb.kbId,
-      MEMORY_ID: this.memory.memory.memoryId,
-      MEMORY_NS_FACTS: this.memory.namespaceFacts,
-      MEMORY_NS_PREFERENCES: this.memory.namespacePreferences,
-      MEMORY_NS_SUMMARY: this.memory.namespaceSummary,
+      MEMORY_PROVIDER: 'agentcore',
+      MEMORY_AGENTCORE_ID: this.memory.memory.memoryId,
+      MEMORY_AGENTCORE_NS_FACTS: this.memory.namespaceFacts,
+      MEMORY_AGENTCORE_NS_PREFERENCES: this.memory.namespacePreferences,
+      MEMORY_AGENTCORE_NS_SUMMARY: this.memory.namespaceSummary,
     };
     if (props.kb.webDataSource) {
       environmentVariables.KB_WEB_DATA_SOURCE_ID = props.kb.webDataSource.attrDataSourceId;

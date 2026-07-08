@@ -1,0 +1,129 @@
+---
+/*
+ * /internal/chrome-frame — hidden internal route used exclusively as the
+ * iframe target by /internal/chrome's pinned blocks. Same INCLUDE_DESIGN_TOKENS
+ * gate as the other Showcase Surfaces (ADR-0002 §8). NOT listed in
+ * /internal/index — reviewers should land on /internal/chrome and let it
+ * embed this page.
+ *
+ * Why an iframe target.
+ * Tailwind's responsive utilities (`lg:hidden`, `lg:grid-cols-*`, etc.) are
+ * driven by *viewport* width, not container width. Rendering Header / Footer
+ * inline inside a `max-w` wrapper on /internal/chrome therefore can't
+ * demonstrate the chrome's mobile-viewport layout — the chrome still reads
+ * its lg: classes off the showcase page's viewport. Iframing this page at a
+ * fixed `width` makes the iframe's inner viewport equal to the iframe width,
+ * which DOES drive `lg:` breakpoints — so a 375 px iframe renders the chrome
+ * in its real mobile layout regardless of the parent viewport.
+ *
+ * Demo dispatch is client-side via `?demo=…`. The route is statically built
+ * (Astro's `output: 'static'`); query strings don't shape the SSG output
+ * but DO surface at runtime via `window.location.search`. The inline script
+ * below reads it and applies the target state once on load:
+ *   • hero          — default; no state change (chrome over tinted hero)
+ *   • scrolled      — scrolls past the Scroll Sentinel, IntersectionObserver
+ *                     fires, chrome gains `.scrolled` via the live wiring
+ *   • drawer-open   — calls `dialog.showModal()` so the drawer enters the
+ *                     browser top layer (above Header's z-40) and renders
+ *                     its `::backdrop` scrim + native focus trap. A bare
+ *                     `[open]` attribute would keep the dialog in normal
+ *                     stacking where Header occludes it — top-layer
+ *                     placement is the whole reason we use showModal()
+ *                     here. Programmatic showModal() on load is permitted
+ *                     by every current engine; an exception would be a
+ *                     loud signal that the demo's contract broke.
+ *   • drawer-closed — same as `hero` (alias, kept for caller clarity)
+ *   • footer        — scrolls to the footer
+ *
+ * The tinted hero is a showcase fixture (not the homepage's "Coming soon"
+ * lockup) so reviewers see the chrome over a contrasting backdrop that
+ * highlights the unscrolled translucency.
+ */
+import { INCLUDE_DESIGN_TOKENS } from "astro:env/server";
+import Layout from "../../layouts/Layout.astro";
+
+if (INCLUDE_DESIGN_TOKENS !== "1") {
+  return new Response(null, { status: 404 });
+}
+---
+
+<Layout
+  title="Chrome frame · internal"
+  description="iframe target for /internal/chrome — dev/preview only"
+  noindex
+>
+  <section
+    class="chrome-frame-hero relative flex min-h-dvh flex-col items-center justify-center px-4"
+  >
+    <div class="mx-auto flex max-w-3xl flex-col items-center py-7">
+      <p class="text-h2 text-white">Tinted hero stand-in</p>
+      <p class="mt-3 max-w-md text-body-l text-white/85">
+        Chrome reviewer surface — embedded as iframe by
+        <code class="text-white">/internal/chrome</code>. Header floats over
+        this gradient block in its unscrolled state.
+      </p>
+    </div>
+    <div
+      data-scroll-sentinel
+      aria-hidden="true"
+      class="absolute bottom-0 h-px w-full"
+    >
+    </div>
+  </section>
+  <section class="min-h-dvh bg-bg-alt px-4 py-7">
+    <p class="mx-auto max-w-3xl text-body text-ink-body">
+      Below-fold content stand-in. Scroll past the hero to see the chrome
+      transition to its scrolled+blur state.
+    </p>
+  </section>
+</Layout>
+
+<style>
+  .chrome-frame-hero {
+    background: radial-gradient(
+      circle at 70% 30%,
+      var(--color-accent) 0%,
+      var(--color-accent-deep) 45%,
+      var(--color-ink-heading) 100%
+    );
+  }
+</style>
+
+<script>
+  /* Read ?demo=… and apply the target visual state once on load. */
+  const params = new URLSearchParams(window.location.search);
+  const demo = params.get('demo');
+
+  const applyState = () => {
+    if (demo === 'drawer-open') {
+      // showModal() places the dialog in the browser top layer with the
+      // native `::backdrop` scrim and focus trap. All current engines
+      // accept programmatic showModal() on initial load — let it throw
+      // loudly if that ever changes; a degraded `[open]` fallback would
+      // misadvertise the state the showcase is supposed to demonstrate.
+      document
+        .querySelector<HTMLDialogElement>('dialog#mobile-drawer')
+        ?.showModal();
+      return;
+    }
+    if (demo === 'scrolled') {
+      // Scroll past the sentinel so IntersectionObserver fires the live
+      // `.scrolled` toggle on Header.
+      window.scrollTo({ top: window.innerHeight + 40, behavior: 'instant' });
+      return;
+    }
+    if (demo === 'footer') {
+      document
+        .querySelector('footer')
+        ?.scrollIntoView({ behavior: 'instant', block: 'start' });
+      return;
+    }
+    // hero / drawer-closed / default — no state change.
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', applyState, { once: true });
+  } else {
+    applyState();
+  }
+</script>

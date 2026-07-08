@@ -1,0 +1,221 @@
+---
+/*
+ * ComparisonTable — semantic <table> chassis shared by /pricing and
+ * /comparison (Task body).
+ *
+ * Cell legend (Story §Validation): check/partial/cross/dash render as
+ * ✓ / ◉ / ✗ / — with a paired sr-only label so colour is not the sole
+ * signal. Arbitrary strings ("Custom", "$49/mo") pass through.
+ *
+ * Mobile strategy — stacked-row-cards (Task body HITL gate). At narrow
+ * widths each <tr> becomes a card and each <td> stacks under a chip
+ * showing its column label; horizontal scroll deliberately rejected
+ * (off-screen tier columns + broken row alignment). Long MS strings
+ * (~20–30% longer per PRD §6) wrap inside cells without column collapse —
+ * `break-words` + no `whitespace-nowrap`.
+ *
+ * Table semantics (Story §Accessibility): <caption> (sr-only), <thead>,
+ * <th scope="col"> for tier headers, <th scope="row"> for feature labels.
+ * Row/column keystroke navigation works in NVDA/JAWS/VoiceOver out of
+ * the box.
+ *
+ * Mobile semantics fallback: WebKit/Blink strip implicit table roles
+ * once `display: block` is applied. Explicit `role="table" | "rowgroup"
+ * | "row" | "columnheader" | "rowheader" | "cell"` is set on every
+ * structural element so the cell↔column-header association survives
+ * the visual restyle (NVDA / VoiceOver still announce "Pro · ✓" pairs).
+ */
+
+export type CellValue = 'check' | 'partial' | 'cross' | 'dash' | string;
+
+export interface Column {
+  label: string;
+  description?: string;
+  highlight?: boolean;
+}
+
+export interface Row {
+  label: string;
+  helper?: string;
+  cells: CellValue[];
+}
+
+interface Props {
+  caption?: string;
+  columns: Column[];
+  rows: Row[];
+  class?: string;
+}
+
+const { caption, columns, rows, class: className = '' } = Astro.props;
+
+// Tones must meet WCAG AA on both bg-surface AND the highlight column's
+// bg-alt: text-pass (5.02 / 4.69), text-fail (6.47 / 6.05), text-ink-heading
+// (17.84 / 16.68). `accent-deep` (#E8920C) reads at ~2.4:1 — under the 3:1
+// non-text bar — so the partial glyph uses ink-heading and leans on shape
+// (`◉` vs `✓`) + the sr-only label to differentiate. `dash` likewise uses
+// ink-body (16.28 on bg-alt) — ink-muted misses AA on bg-alt at caption size.
+const legend = {
+  check:   { glyph: '✓', label: 'Yes', tone: 'text-pass' },
+  partial: { glyph: '◉', label: 'Partial', tone: 'text-ink-heading' },
+  cross:   { glyph: '✗', label: 'No', tone: 'text-fail' },
+  dash:    { glyph: '—', label: 'Not applicable', tone: 'text-ink-body' },
+} as const;
+
+function isLegendKey(v: CellValue): v is keyof typeof legend {
+  return v === 'check' || v === 'partial' || v === 'cross' || v === 'dash';
+}
+---
+
+<div class:list={['w-full', className]}>
+  <table role="table" class="comparison-table w-full border-collapse text-body text-ink-body">
+    {caption && <caption class="sr-only">{caption}</caption>}
+    <thead role="rowgroup">
+      <tr role="row">
+        <th
+          role="columnheader"
+          scope="col"
+          class="comparison-th-feature p-2 text-left align-bottom font-semibold text-ink-heading"
+        >
+          <span class="sr-only">Feature</span>
+        </th>
+        {columns.map((col) => (
+          <th
+            role="columnheader"
+            scope="col"
+            class:list={[
+              'comparison-th p-2 text-left align-bottom',
+              'border-b border-border',
+              'font-semibold text-ink-heading',
+              col.highlight && 'bg-bg-alt border-b-2 border-b-accent',
+            ]}
+            data-highlight={col.highlight ? 'true' : undefined}
+          >
+            <span class="block text-h3">{col.label}</span>
+            {col.description && (
+              <span class="block text-caption font-normal text-ink-body">{col.description}</span>
+            )}
+          </th>
+        ))}
+      </tr>
+    </thead>
+    <tbody role="rowgroup">
+      {rows.map((row) => (
+        <tr role="row" class="comparison-row border-b border-border last:border-b-0">
+          <th
+            role="rowheader"
+            scope="row"
+            class="comparison-th-row p-2 text-left align-top font-normal text-ink-body"
+          >
+            <span class="block font-semibold text-ink-heading">{row.label}</span>
+            {row.helper && (
+              <span class="block text-caption font-normal text-ink-body">{row.helper}</span>
+            )}
+          </th>
+          {row.cells.map((cell, idx) => {
+            const col = columns[idx];
+            const colLabel = col?.label ?? '';
+            const cellBase = [
+              'comparison-cell p-2 align-top break-words',
+              col?.highlight && 'bg-bg-alt',
+            ];
+            if (isLegendKey(cell)) {
+              const { glyph, label, tone } = legend[cell];
+              return (
+                <td
+                  role="cell"
+                  class:list={[...cellBase, 'sm:text-center']}
+                  data-col-label={colLabel}
+                  data-highlight={col?.highlight ? 'true' : undefined}
+                >
+                  <span class="comparison-chip-label text-caption text-ink-body">{colLabel}</span>
+                  <span aria-hidden="true" class:list={['text-h3', tone]}>{glyph}</span>
+                  <span class="sr-only">{label}</span>
+                </td>
+              );
+            }
+            return (
+              <td
+                role="cell"
+                class:list={cellBase}
+                data-col-label={colLabel}
+                data-highlight={col?.highlight ? 'true' : undefined}
+              >
+                <span class="comparison-chip-label text-caption text-ink-body">{colLabel}</span>
+                <span>{cell}</span>
+              </td>
+            );
+          })}
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
+
+<style>
+  /* Mobile: stacked-row-cards. Table semantics stay intact for AT (the
+     element is still <table>/<tr>/<th>/<td>); CSS overrides visual layout.
+     Mirror Tailwind's `sm:` breakpoint (640px) so the desktop branch
+     activates with sm:table — keep both halves in sync if the breakpoint
+     ever moves. */
+  @media (max-width: 639px) {
+    .comparison-table,
+    .comparison-table thead,
+    .comparison-table tbody,
+    .comparison-table tr,
+    .comparison-table th,
+    .comparison-table td {
+      display: block;
+      width: 100%;
+    }
+
+    .comparison-table thead {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    .comparison-table .comparison-row {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-card);
+      padding: var(--spacing-2);
+      margin-bottom: var(--spacing-2);
+      background: var(--color-surface);
+    }
+
+    .comparison-table .comparison-th-row {
+      padding-bottom: var(--spacing-1);
+      border-bottom: 1px solid var(--color-border);
+      margin-bottom: var(--spacing-1);
+    }
+
+    .comparison-table .comparison-cell {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: var(--spacing-2);
+      padding-top: var(--spacing-1);
+      padding-bottom: var(--spacing-1);
+    }
+
+    .comparison-table .comparison-cell[data-highlight="true"] {
+      background: transparent;
+    }
+
+    .comparison-table .comparison-cell[data-highlight="true"] .comparison-chip-label::after {
+      content: " ★";
+      color: var(--color-accent-deep);
+    }
+  }
+
+  /* Desktop: chip labels are decorative-only — the <thead> carries
+     column meaning. */
+  @media (min-width: 640px) {
+    .comparison-chip-label {
+      display: none;
+    }
+  }
+</style>

@@ -1,0 +1,11 @@
+---
+/*
+ * 404 (MS) — emits /ms/404.html so MS users hit a localized error page
+ * instead of falling back to the EN copy on CloudFront's errorResponses
+ * rewrite. The shared NotFoundPage reads Astro.currentLocale to pick
+ * MS strings + the /ms/ home link.
+ */
+import NotFoundPage from "../../components/NotFoundPage.astro";
+---
+
+<NotFoundPage />

@@ -108,9 +108,21 @@ export {
 } from './adapters/yaml/parse.js';
 
 export {
+  YamlRegistryRepository,
+  type YamlRegistryRepositoryOptions,
+} from './adapters/yaml/registry.js';
+export {
+  type YamlSource,
+  type YamlSourceReadResult,
+} from './adapters/yaml/source.js';
+export {
   S3YamlRegistryRepository,
+  S3YamlSource,
   type S3YamlRegistryRepositoryOptions,
+  type S3YamlSourceOptions,
 } from './adapters/yaml/s3.js';
+// LocalYamlRegistryRepository lives under @repo/registry/local-yaml so the barrel
+// stays browser-safe (LocalYamlSource pulls in node:fs/promises).
 export {
   PostgresRegistryRepository,
   type PostgresRegistryRepositoryOptions,

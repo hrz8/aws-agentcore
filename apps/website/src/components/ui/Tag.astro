@@ -1,0 +1,37 @@
+---
+/*
+ * Tag — industry chip / taxonomy pill. Uniform shape across instances;
+ * `href` present → renders <a> (hoverable, focusable); absent → static <span>.
+ * Kept distinct from Badge per ADR-0003 §9 — Rule-of-Three defers shared
+ * shell extraction until a third pill primitive lands.
+ */
+
+interface Props {
+  href?: string | URL;
+  class?: string;
+}
+
+const { href, class: className = '' } = Astro.props;
+const isAnchor = href !== undefined;
+
+const base = [
+  'inline-flex items-center',
+  'rounded-pill',
+  'border border-border bg-bg-alt',
+  'px-2 py-1',
+  'text-caption text-ink-body',
+  'leading-snug',
+];
+
+const interactiveClasses = isAnchor
+  ? 'transition-colors cursor-pointer hover:bg-border focus-visible:outline-2 focus-visible:outline-offset-[2px] focus-visible:outline-ink-heading'
+  : '';
+
+const classes = [...base, interactiveClasses, className];
+---
+
+{isAnchor ? (
+  <a href={href} class:list={classes}><slot /></a>
+) : (
+  <span class:list={classes}><slot /></span>
+)}

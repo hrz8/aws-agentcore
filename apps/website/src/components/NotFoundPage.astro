@@ -1,0 +1,52 @@
+---
+/*
+ * NotFoundPage — shared 404 body for /404.astro and /ms/404.astro.
+ *
+ * Locale resolved via Astro.currentLocale (set by the i18n config in
+ * astro.config.mjs); a thin lookup picks EN or MS copy. Home link is
+ * `/` for EN, `/ms/` for MS, mirroring LanguageSwitcher's path-swap
+ * convention. When a third caller arrives the inline message lookup
+ * is the Rule-of-Three trigger to extract a real i18n module.
+ */
+import Layout from "../layouts/Layout.astro";
+import Button from "./ui/Button.astro";
+
+type Locale = "en-GB" | "ms-MY";
+
+const messages: Record<Locale, { eyebrow: string; heading: string; body: string; cta: string; home: string }> = {
+  "en-GB": {
+    eyebrow: "404",
+    heading: "Page not found",
+    body: "The page you were looking for doesn't exist or may have moved.",
+    cta: "Back to home",
+    home: "/",
+  },
+  "ms-MY": {
+    eyebrow: "404",
+    heading: "Halaman tidak ditemui",
+    body: "Halaman yang anda cari tidak wujud atau mungkin telah dipindahkan.",
+    cta: "Kembali ke laman utama",
+    home: "/ms/",
+  },
+};
+
+const locale: Locale = Astro.currentLocale === "ms-MY" ? "ms-MY" : "en-GB";
+const m = messages[locale];
+---
+
+<Layout
+  title={`${m.heading} · trinitywizards.com`}
+  description={m.body}
+  noindex
+>
+  <div
+    class="mx-auto flex min-h-screen max-w-3xl flex-col items-center justify-center gap-3 px-4 py-7 text-center"
+  >
+    <p class="text-caption font-semibold uppercase tracking-widest text-ink-heading">
+      {m.eyebrow}
+    </p>
+    <h1>{m.heading}</h1>
+    <p class="text-body-l text-ink-body">{m.body}</p>
+    <Button variant="primary" href={m.home}>{m.cta}</Button>
+  </div>
+</Layout>

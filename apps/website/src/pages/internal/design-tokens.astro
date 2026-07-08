@@ -1,0 +1,308 @@
+---
+import { INCLUDE_DESIGN_TOKENS } from "astro:env/server";
+import Layout from "../../layouts/Layout.astro";
+import { DOCUMENTED_PAIRS, TOKEN_HEX, evaluatePair } from "../../lib/contrast";
+import type { PairEvaluation, TokenPair } from "../../lib/contrast";
+
+// Build-time gate — returning a 404 Response from a static page omits it from
+// the dist output entirely (verified via `pnpm build` AC). See ADR-0002 §8.
+if (INCLUDE_DESIGN_TOKENS !== "1") {
+  return new Response(null, { status: 404 });
+}
+
+interface ColorToken {
+  name: string;
+  varName: string;
+  hex: string;
+}
+
+const colors: ColorToken[] = [
+  {
+    name: "Accent",
+    varName: "--color-accent",
+    hex: TOKEN_HEX["--color-accent"],
+  },
+  {
+    name: "Accent deep",
+    varName: "--color-accent-deep",
+    hex: TOKEN_HEX["--color-accent-deep"],
+  },
+  {
+    name: "Gradient to",
+    varName: "--color-gradient-to",
+    hex: TOKEN_HEX["--color-gradient-to"],
+  },
+  { name: "Background", varName: "--color-bg", hex: TOKEN_HEX["--color-bg"] },
+  {
+    name: "Background alt",
+    varName: "--color-bg-alt",
+    hex: TOKEN_HEX["--color-bg-alt"],
+  },
+  {
+    name: "Surface",
+    varName: "--color-surface",
+    hex: TOKEN_HEX["--color-surface"],
+  },
+  {
+    name: "Border",
+    varName: "--color-border",
+    hex: TOKEN_HEX["--color-border"],
+  },
+  {
+    name: "Ink heading",
+    varName: "--color-ink-heading",
+    hex: TOKEN_HEX["--color-ink-heading"],
+  },
+  {
+    name: "Ink body",
+    varName: "--color-ink-body",
+    hex: TOKEN_HEX["--color-ink-body"],
+  },
+  {
+    name: "Ink muted",
+    varName: "--color-ink-muted",
+    hex: TOKEN_HEX["--color-ink-muted"],
+  },
+];
+
+const radii = [
+  { name: "Button", varName: "--radius-btn", px: "8px" },
+  { name: "Card", varName: "--radius-card", px: "14px" },
+  { name: "Pill", varName: "--radius-pill", px: "999px" },
+];
+
+const spacings = [
+  { name: "Spacing 1", varName: "--spacing-1", px: "8px" },
+  { name: "Spacing 2", varName: "--spacing-2", px: "12px" },
+  { name: "Spacing 3", varName: "--spacing-3", px: "18px" },
+  { name: "Spacing 4", varName: "--spacing-4", px: "24px" },
+  { name: "Spacing 5", varName: "--spacing-5", px: "32px" },
+  { name: "Spacing 6", varName: "--spacing-6", px: "56px" },
+  { name: "Spacing 7", varName: "--spacing-7", px: "80px" },
+];
+
+const typeScale = [
+  {
+    name: "Display",
+    spec: "clamp(52px → 66px) · Syne 600",
+    utility: "text-display",
+  },
+  { name: "H1", spec: "clamp(42px → 46px) · Syne 600", utility: "text-h1" },
+  { name: "H2", spec: "34px · Syne 600", utility: "text-h2" },
+  { name: "H3", spec: "21px · Syne 600", utility: "text-h3" },
+  { name: "Body L", spec: "17px · Sora 400", utility: "text-body-l" },
+  { name: "Body", spec: "15px · Sora 400", utility: "text-body" },
+  { name: "Caption", spec: "12.5px · Sora 400", utility: "text-caption" },
+];
+
+interface ContrastRow extends TokenPair {
+  evaluation: PairEvaluation;
+}
+
+const contrastRows: ContrastRow[] = DOCUMENTED_PAIRS.map((p) => ({
+  ...p,
+  evaluation: evaluatePair(p.fgHex, p.bgHex),
+}));
+
+const fmtRatio = (r: number) => r.toFixed(2);
+
+const fgVar = (varName: string) => `var(${varName})`;
+---
+
+<Layout
+  title="Design tokens · nd8.ai"
+  description="Design token showcase — dev/preview only"
+  noindex
+  chrome={false}
+>
+  <div class="mx-auto max-w-3xl px-4 py-7">
+    <header class="mb-6">
+      <h1>Design tokens</h1>
+      <p class="mt-2 text-ink-body">
+        Source of truth: Figma node <code>29:5768</code>. Tokens live in
+        <code>apps/website/src/styles/global.css</code>. This page is
+        dev/preview-only; production builds omit it via the <code
+          >INCLUDE_DESIGN_TOKENS</code
+        > flag.
+      </p>
+    </header>
+
+    <section class="mb-7" aria-labelledby="section-color">
+      <h2 id="section-color" class="mb-4">Color</h2>
+      <ul class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {
+          colors.map((c) => (
+            <li class="flex items-center gap-3 rounded-card border border-border bg-surface p-3">
+              <span
+                class="block h-7 w-7 shrink-0 rounded-btn border border-border"
+                style={`background-color: ${fgVar(c.varName)};`}
+                aria-hidden="true"
+              />
+              <span class="flex min-w-0 flex-col">
+                <span class="text-body font-semibold text-ink-heading">
+                  {c.name}
+                </span>
+                <code class="text-caption text-ink-muted">{c.varName}</code>
+                <code class="text-caption text-ink-muted">{c.hex}</code>
+              </span>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    <section class="mb-7" aria-labelledby="section-radii">
+      <h2 id="section-radii" class="mb-4">Radii</h2>
+      <ul class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {
+          radii.map((r) => (
+            <li
+              class="flex items-center gap-3 border border-border bg-surface p-3"
+              style={`border-radius: ${fgVar(r.varName)};`}
+            >
+              <span
+                class="block h-7 w-7 shrink-0 bg-accent"
+                style={`border-radius: ${fgVar(r.varName)};`}
+                aria-hidden="true"
+              />
+              <span class="flex min-w-0 flex-col">
+                <span class="text-body font-semibold text-ink-heading">
+                  {r.name}
+                </span>
+                <code class="text-caption text-ink-muted">{r.varName}</code>
+                <code class="text-caption text-ink-muted">{r.px}</code>
+              </span>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    <section class="mb-7" aria-labelledby="section-spacing">
+      <h2 id="section-spacing" class="mb-4">Spacing</h2>
+      <ul class="flex flex-col gap-2">
+        {
+          spacings.map((s) => (
+            <li class="flex items-center gap-4 rounded-card border border-border bg-surface p-3">
+              <span class="flex min-w-0 flex-1 flex-col">
+                <span class="text-body font-semibold text-ink-heading">
+                  {s.name}
+                </span>
+                <code class="text-caption text-ink-muted">
+                  {s.varName} · {s.px}
+                </code>
+              </span>
+              <span
+                class="block h-3 shrink-0 rounded-btn bg-accent"
+                style={`width: ${fgVar(s.varName)};`}
+                aria-hidden="true"
+              />
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    <section class="mb-7" aria-labelledby="section-typography">
+      <h2 id="section-typography" class="mb-4">Typography</h2>
+      <ul class="flex flex-col gap-4">
+        {
+          typeScale.map((t) => (
+            <li class="rounded-card border border-border bg-surface p-4">
+              <span class={`block ${t.utility}`}>
+                {t.name} — the quick brown fox
+              </span>
+              <span class="mt-1 block text-caption text-ink-muted">
+                {t.spec}
+              </span>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    <section class="mb-7" aria-labelledby="section-gradient-glow">
+      <h2 id="section-gradient-glow" class="mb-4">Gradient & Glow</h2>
+      <ul class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <li class="rounded-card border border-border bg-surface p-4">
+          <span
+            class="bg-gradient-accent block h-7 w-full rounded-btn"
+            aria-hidden="true"
+            style="height: 96px"></span>
+          <span class="mt-3 block text-body font-semibold text-ink-heading"
+            >Accent gradient</span
+          >
+          <code class="text-caption text-ink-muted">--gradient-accent</code>
+        </li>
+        <li class="rounded-card border border-border bg-ink-heading p-4">
+          <span
+            class="bg-glow-amber block h-7 w-full rounded-btn"
+            aria-hidden="true"
+            style="height: 96px"></span>
+          <span class="mt-3 block text-body font-semibold text-surface"
+            >Amber glow</span
+          >
+          <code class="text-caption text-surface">--glow-amber</code>
+        </li>
+      </ul>
+    </section>
+
+    <section class="mb-7" aria-labelledby="section-contrast">
+      <h2 id="section-contrast" class="mb-4">Contrast matrix</h2>
+      <p class="mb-4 text-ink-body">
+        Computed live from <code>src/lib/contrast.ts</code>. The committed
+        <code>docs/contrast-matrix.md</code> is generated from the same source via
+        <code>pnpm contrast-matrix</code>.
+      </p>
+      <ul class="flex flex-col gap-3">
+        {
+          contrastRows.map((row) => {
+            const { ratio, passesAA, passesAAA } = row.evaluation;
+            const aaLabel = `AA: ${fmtRatio(ratio)}:1 ${passesAA ? "PASS" : "FAIL"}`;
+            const aaaLabel = `AAA: ${fmtRatio(ratio)}:1 ${passesAAA ? "PASS" : "FAIL"}`;
+            return (
+              <li class="flex flex-col gap-3 rounded-card border border-border bg-surface p-3 sm:flex-row sm:items-center">
+                <span
+                  class="flex h-7 shrink-0 items-center justify-center rounded-btn px-3"
+                  style={`background-color: ${fgVar(row.bgName)}; min-width: 160px;`}
+                  aria-hidden="true"
+                >
+                  <span
+                    class="block h-3 w-7 rounded-pill"
+                    style={`background-color: ${fgVar(row.fgName)};`}
+                  ></span>
+                </span>
+                <span class="flex min-w-0 flex-1 flex-col">
+                  <span class="text-body font-semibold text-ink-heading">
+                    {row.fgName.replace("--color-", "")} on{" "}
+                    {row.bgName.replace("--color-", "")}
+                  </span>
+                  {row.note && (
+                    <span class="text-caption text-ink-muted">{row.note}</span>
+                  )}
+                  <code class="text-caption text-ink-muted">
+                    ratio {fmtRatio(ratio)}:1
+                  </code>
+                </span>
+                <span class="flex shrink-0 flex-wrap gap-2">
+                  <span
+                    class={`inline-flex items-center gap-1 rounded-pill px-3 py-1 text-body font-semibold text-surface ${passesAA ? "bg-pass" : "bg-fail"}`}
+                  >
+                    <span aria-hidden="true">{passesAA ? "✓" : "✗"}</span>
+                    {aaLabel}
+                  </span>
+                  <span
+                    class={`inline-flex items-center gap-1 rounded-pill px-3 py-1 text-body font-semibold text-surface ${passesAAA ? "bg-pass" : "bg-fail"}`}
+                  >
+                    <span aria-hidden="true">{passesAAA ? "✓" : "✗"}</span>
+                    {aaaLabel}
+                  </span>
+                </span>
+              </li>
+            );
+          })
+        }
+      </ul>
+    </section>
+  </div>
+</Layout>

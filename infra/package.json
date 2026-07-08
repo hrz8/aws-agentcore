@@ -12,6 +12,7 @@
     "build": "tsc",
     "watch": "tsc -w",
     "typecheck": "tsc --noEmit",
+    "lint": "echo 'no lint targets' && exit 0",
     "cdk": "cdk",
     "synth": "cdk synth",
     "predeploy:dev": "pnpm --filter dashboard build",

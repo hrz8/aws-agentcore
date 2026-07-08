@@ -1,0 +1,57 @@
+---
+/*
+ * Card — icon + title + body + optional footer chassis.
+ *
+ * `href` present → entire content wraps in <a> (single focus stop; AT
+ * announces the title + body as the link's accessible name per Task body
+ * + ADR-0003 §6). Absent → renders <div>. The Story-listed variants
+ * (Jobs strip, Templates, About) differ only in slot fill, not chassis —
+ * same component, different content.
+ *
+ * Optional content (`icon`, `title`, `footer`) is render-gated so a Card
+ * with body-only renders cleanly (Story §Failure modes).
+ */
+
+interface Props {
+  title?: string;
+  href?: string | URL;
+  class?: string;
+}
+
+const { title, href, class: className = '' } = Astro.props;
+const isAnchor = href !== undefined;
+
+const base = [
+  'flex flex-col gap-2',
+  'rounded-card border border-border bg-surface',
+  'p-3',
+];
+
+const interactiveClasses = isAnchor
+  ? 'transition-colors hover:border-ink-heading focus-visible:outline-2 focus-visible:outline-offset-[2px] focus-visible:outline-ink-heading'
+  : '';
+
+const classes = [...base, interactiveClasses, className];
+
+const hasIcon = Astro.slots.has('icon');
+const hasFooter = Astro.slots.has('footer');
+
+// Dynamic element via capitalised string variable — Astro emits `<a>` when
+// the variable resolves to 'a', `<div>` otherwise. `href={undefined}` on the
+// div branch is a no-op (attribute is omitted), so the single template stays
+// safe across both branches.
+const Tag = isAnchor ? 'a' : 'div';
+---
+
+<Tag href={href} class:list={classes}>
+  {hasIcon && (
+    <div class="inline-flex items-center justify-center self-start text-ink-heading">
+      <slot name="icon" />
+    </div>
+  )}
+  {title && <h3 class="text-h3 text-ink-heading">{title}</h3>}
+  <div class="text-body text-ink-body"><slot /></div>
+  {hasFooter && (
+    <div class="mt-auto text-caption text-ink-muted"><slot name="footer" /></div>
+  )}
+</Tag>

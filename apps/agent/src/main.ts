@@ -14,7 +14,6 @@ import { composeAgentScope, isUuid, type Scope } from '@repo/kit/identity';
 import {
   KB_ID,
   KB_WEB_DATA_SOURCE_ID,
-  MEMORY_ID,
   MEMORY_PROVIDER,
   MemoryProvider,
   PORT,
@@ -34,7 +33,7 @@ const registry: RegistryRepository = await createRegistryRepository();
 const MEMORY_SNAPSHOT_STORAGE = createMemorySnapshotStorage();
 
 console.info(`[agent] registry source: ${REGISTRY_SOURCE}`);
-console.info(`[agent] stage kb=${KB_ID ?? 'off'} web=${KB_WEB_DATA_SOURCE_ID ?? 'off'} bucket=${UPLOADS_BUCKET ?? 'off'} memory=${MEMORY_ID ? 'on' : 'off'}`);
+console.info(`[agent] stage kb=${KB_ID ?? 'off'} web=${KB_WEB_DATA_SOURCE_ID ?? 'off'} bucket=${UPLOADS_BUCKET ?? 'off'} memory=${MEMORY_PROVIDER}`);
 
 const MAX_CACHED_SUB_APPS = 10;
 const subAppByScope = new Map<string, express.Express>();
@@ -100,7 +99,7 @@ async function makeSubApp(def: AgentDefinition, built: BuiltAgent): Promise<expr
           console.warn(`[agent] actorId missing on forwardedProps; memory not wired for thread ${input.threadId}`);
           return undefined;
         }
-        if (MEMORY_PROVIDER === MemoryProvider.None || !MEMORY_ID) {
+        if (MEMORY_PROVIDER === MemoryProvider.None) {
           return undefined;
         }
         const memoryManager = createMemoryManager({ actorId, sessionId: input.threadId });

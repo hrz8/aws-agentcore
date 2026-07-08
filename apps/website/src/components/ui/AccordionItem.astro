@@ -1,0 +1,92 @@
+---
+/*
+ * AccordionItem — one Q/A row backed by native <details>/<summary>.
+ *
+ * Free aria-expanded + keyboard activation + screen-reader semantics from
+ * the native element (ADR-0004 §1). The +/− affordance rotates via the
+ * native `[open]` selector → no JS in this primitive.
+ *
+ * Single-open enforcement (closing siblings when one opens) is owned by
+ * the parent Accordion's co-located inline script (ADR-0004 §2).
+ *
+ * Motion: ::details-content + interpolate-size keyword animation lets the
+ * content height transition between 0 and `auto` (Chrome 131+, Safari 18.2+,
+ * Firefox 137+ as of 2026, per ADR-0004 §4). Browsers without the pseudo
+ * fall back to instant jump — the same path `prefers-reduced-motion` takes,
+ * already covered globally in global.css.
+ *
+ * Touch target ≥ 44 × 44 on <summary> via min-h-[44px] + flex centering
+ * (Story §Validation).
+ */
+
+interface Props {
+  question: string;
+  open?: boolean;
+  class?: string;
+}
+
+const { question, open = false, class: className = '' } = Astro.props;
+---
+
+<details
+  class:list={[
+    'group/accordion-item',
+    'border-b border-border',
+    className,
+  ]}
+  open={open}
+>
+  <summary
+    class:list={[
+      'flex items-center justify-between gap-2',
+      'cursor-pointer list-none select-none',
+      'min-h-[44px]',
+      'py-2',
+      'text-body font-semibold text-ink-heading',
+      'focus-visible:outline-2 focus-visible:outline-offset-[2px] focus-visible:outline-ink-heading',
+    ]}
+  >
+    <span>{question}</span>
+    <span
+      aria-hidden="true"
+      class="ml-2 inline-block text-h3 leading-none text-ink-muted transition-transform group-open/accordion-item:rotate-45"
+    >
+      +
+    </span>
+  </summary>
+  <div class="accordion-body pb-2 text-body text-ink-body">
+    <slot />
+  </div>
+</details>
+
+<style>
+  /* WebKit/Chromium hide the legacy disclosure triangle via `list-style: none`
+     when `list-none` is applied; Safari needs the explicit pseudo override. */
+  summary::-webkit-details-marker {
+    display: none;
+  }
+
+  /* Smooth expand/collapse via the modern ::details-content pseudo. Older
+     browsers without support jump-cut — acceptable per ADR-0004 §4 and aligns
+     with the `prefers-reduced-motion` fallback handled globally.
+     `interpolate-size` lives on <details> so the keyword inherits into the
+     pseudo whose intrinsic block-size is interpolated. */
+  details {
+    interpolate-size: allow-keywords;
+  }
+
+  details::details-content {
+    block-size: 0;
+    overflow: clip;
+    opacity: 0;
+    transition:
+      block-size 0.2s ease,
+      content-visibility 0.2s ease allow-discrete,
+      opacity 0.2s ease;
+  }
+
+  details[open]::details-content {
+    block-size: auto;
+    opacity: 1;
+  }
+</style>

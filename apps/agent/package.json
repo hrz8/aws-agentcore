@@ -8,6 +8,7 @@
   "engines": {
     "node": ">=24"
   },
+  "packageManager": "pnpm@10.34.4",
   "main": "dist/main.js",
   "scripts": {
     "dev": "tsx watch src/main.ts",
@@ -15,6 +16,9 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/main.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "echo 'no lint targets' && exit 0",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "docker:build": "docker build --platform=linux/arm64 -t nd8-agent-runtime:dev .",
     "docker:run": "docker run --rm -p 8080:8080 --env-file .env nd8-agent-runtime:dev"
   },
@@ -27,6 +31,7 @@
     "@anthropic-ai/sdk": "0.92.0",
     "@strands-agents/sdk": "1.6.0",
     "bedrock-agentcore": "^0.3.0",
+    "better-sqlite3": "^12.11.1",
     "cors": "catalog:",
     "dotenv": "catalog:",
     "express": "catalog:",
@@ -37,10 +42,13 @@
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
+    "@repo/vitest-config": "workspace:*",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/cors": "catalog:",
     "@types/express": "catalog:",
     "@types/node": "catalog:",
     "tsx": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

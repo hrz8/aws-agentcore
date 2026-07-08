@@ -1,0 +1,51 @@
+---
+/*
+ * Badge — short status / industry / credibility pills.
+ * Tone is the color axis; `dot` is an optional status indicator that
+ * doubles the visual signal (color is not the sole differentiator).
+ * Long localized strings wrap inside the pill — no whitespace-nowrap.
+ */
+
+type Tone = 'positive' | 'pending' | 'info' | 'neutral';
+
+interface Props {
+  tone?: Tone;
+  dot?: boolean;
+  class?: string;
+}
+
+const { tone = 'neutral', dot = false, class: className = '' } = Astro.props;
+
+const base = [
+  'inline-flex items-center gap-1',
+  'rounded-pill',
+  'border',
+  'px-2 py-1',
+  'text-caption font-semibold',
+  'leading-snug',
+];
+
+const toneClasses = {
+  positive: 'bg-pass/10 border-pass/30 text-ink-heading',
+  pending:  'bg-accent/15 border-accent/40 text-ink-heading',
+  info:     'bg-surface border-border text-ink-heading',
+  neutral:  'bg-bg-alt border-border text-ink-heading',
+} as const;
+
+const dotClasses = {
+  positive: 'bg-pass',
+  pending:  'bg-accent-deep',
+  info:     'bg-ink-heading',
+  neutral:  'bg-ink-muted',
+} as const;
+---
+
+<span class:list={[...base, toneClasses[tone], className]}>
+  {dot && (
+    <span
+      aria-hidden="true"
+      class:list={['inline-block size-1 shrink-0 rounded-pill', dotClasses[tone]]}
+    />
+  )}
+  <slot />
+</span>

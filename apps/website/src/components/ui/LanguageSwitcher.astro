@@ -1,0 +1,187 @@
+---
+/*
+ * LanguageSwitcher — EN / MS segmented control.
+ *
+ * Active locale gets aria-current="page" + visual fill (canonical value for
+ * nav contexts — NVDA/JAWS announce "current page"). Other-locale href is
+ * computed from Astro.url.pathname via the canonical helpers in `src/lib/
+ * i18n.ts`; routing wiring lands in Epic 10. Touch target ≥ 44 × 44 via
+ * min-h/min-w + px-3 py-2 on each anchor (Story Validation AC).
+ *
+ * Two prop axes (ADR-0003 §4):
+ *   - `tone` — visual theme for the surface beneath ('on-light' | 'on-dark').
+ *     Mirrors Badge's tone axis. Lookup table per ADR-0003 §5; `divider`,
+ *     `focus`, and `inert` slots are tone-aware too (the original `border-
+ *     border` divider and `outline-ink-heading` focus ring are dark tokens
+ *     that disappear against the on-dark backdrop).
+ *   - `enOnly` — pages on the permanently-EN technical surfaces (Design
+ *     Brief §IA list, encoded in `isEnOnlyPath`) opt in. EN locks active,
+ *     MS renders as a non-navigable `<span aria-disabled="true">` (matches
+ *     Button.astro's inert-anchor convention) so the visual and a11y trees
+ *     stay aligned — MS remains in DOM, not silently removed — and a
+ *     caption beneath signals the constraint. The Task body's literal
+ *     `opacity-60` was dropped: stacking alpha on `text-white/60` over a
+ *     translucent `bg-white/5` backdrop on `bg-ink-heading` yields ≈ 3.73:1,
+ *     below WCAG 2.2 AA normal-text (4.5:1). The inert state instead reuses
+ *     the inactive text colour (already AA-clear) plus `cursor-not-allowed`,
+ *     with the caption carrying the explicit constraint copy. Flagged on
+ *     the PR description per Task design-review handshake.
+ *
+ * v2 contract: outer wrapper changed from a single `<nav>` to
+ * `<div class:list={['inline-flex flex-col items-start', className]}>`
+ * containing the `<nav>` + optional caption. The caller's `class` prop
+ * now attaches to the wrapper (controls vertical stack); per-pill styling
+ * is owned by the component.
+ *
+ * See ADR-0004 §1 (zero-JS interactivity) and ADR-0005 §3 (locale helpers).
+ *
+ * Trailing-slash asymmetry: at `/ms`, EN href is `/`; at `/`, MS href is
+ * `/ms/`. Round-tripping introduces or drops the trailing slash on the
+ * second toggle. Astro's `trailingSlash` config normalises in practice
+ * but the primitive itself is not yet trailing-slash-stable — Epic 10 will
+ * own the canonical routing pass.
+ */
+import { localeHref, stripLocale } from "../../lib/i18n";
+
+type Tone = "on-light" | "on-dark";
+
+interface Props {
+  tone?: Tone;
+  enOnly?: boolean;
+  /**
+   * When `false`, the enOnly caption renders as visually-hidden `sr-only`
+   * instead of as a visible paragraph beneath the pill. AT still announces
+   * it via the live DOM; sighted users get the signal from the dimmed-MS
+   * pill alone. Use in tight chrome (Header) where the caption otherwise
+   * stacks below the fixed-height bar and reads as misaligned. Defaults
+   * to `true` (visible) for surfaces with vertical room — drawer, footer.
+   */
+  captionVisible?: boolean;
+  class?: string;
+}
+
+const {
+  tone = "on-light",
+  enOnly = false,
+  captionVisible = true,
+  class: className = "",
+} = Astro.props;
+
+const path = Astro.url.pathname;
+const stripped = stripLocale(path);
+const isMs = stripped !== path;
+const enHref = localeHref(stripped, "en-GB");
+const msHref = localeHref(stripped, "ms-MY");
+
+// In enOnly mode EN is force-active and MS is rendered as inert — independent
+// of which locale the visitor is currently on. Outside enOnly, the URL drives
+// the active locale.
+const locales = [
+  {
+    code: "en",
+    label: "EN",
+    href: enHref,
+    hrefLang: "en-GB",
+    active: enOnly ? true : !isMs,
+    inert: false,
+  },
+  {
+    code: "ms",
+    label: "MS",
+    href: msHref,
+    hrefLang: "ms-MY",
+    active: enOnly ? false : isMs,
+    inert: enOnly,
+  },
+] as const;
+
+// Per-tone class lookup (ADR-0003 §5). `inert` is used for the MS slot
+// when `enOnly` is set — same text color as `inactive` (so it remains AA
+// legible — see a11y review on Task #19) without hover affordances, since
+// the constraint is signalled by the caption + cursor + aria-disabled.
+// `caption` deliberately uses `ink-body` for on-light (not `ink-muted`) so
+// the page-background-rendered case (Header) clears AA on `bg-bg` (4.42:1
+// failed; 14.7:1 passes).
+const toneClasses = {
+  "on-light": {
+    container: "border-border bg-surface",
+    active: "bg-bg-alt text-ink-heading",
+    inactive: "bg-surface text-ink-muted hover:bg-bg-alt hover:text-ink-heading",
+    inert: "bg-surface text-ink-muted cursor-not-allowed",
+    divider: "border-border",
+    focus: "focus-visible:outline-ink-heading",
+    caption: "text-ink-body",
+  },
+  "on-dark": {
+    container: "border-white/15 bg-white/5",
+    active: "bg-white/15 text-white",
+    inactive: "bg-transparent text-white/60 hover:bg-white/10 hover:text-white",
+    inert: "bg-transparent text-white/60 cursor-not-allowed",
+    divider: "border-white/15",
+    focus: "focus-visible:outline-white",
+    caption: "text-white/60",
+  },
+} as const;
+
+const tc = toneClasses[tone];
+---
+
+<div class:list={["inline-flex flex-col items-start", className]}>
+  <nav
+    aria-label="Language"
+    class:list={[
+      "inline-flex items-stretch overflow-hidden",
+      "rounded-btn border",
+      tc.container,
+    ]}
+  >
+    {locales.map((loc, i) => {
+      const segmentClasses = [
+        "inline-flex items-center justify-center",
+        "min-h-[44px] min-w-[44px]",
+        "px-3 py-2",
+        "text-body font-semibold",
+        "transition-colors",
+        i > 0 && ["border-l", tc.divider],
+        loc.inert ? tc.inert : loc.active ? tc.active : tc.inactive,
+      ];
+      // Inert MS in enOnly mode renders as <span> (Button.astro convention)
+      // so the element is non-navigable by every input modality — drop href,
+      // drop tab stop, announce as disabled. The caption + cursor-not-allowed
+      // carry the visual signal; the inert text colour matches the inactive
+      // colour so AA contrast is preserved on both tones (avoids the
+      // opacity-stacking failure the spec literal would have produced).
+      return loc.inert ? (
+        <span
+          aria-disabled="true"
+          tabindex={-1}
+          class:list={segmentClasses}
+        >
+          {loc.label}
+        </span>
+      ) : (
+        <a
+          href={loc.href}
+          hreflang={loc.hrefLang}
+          aria-current={loc.active ? "page" : undefined}
+          class:list={[
+            ...segmentClasses,
+            "focus-visible:outline-2 focus-visible:-outline-offset-[2px]",
+            tc.focus,
+          ]}
+        >
+          {loc.label}
+        </a>
+      );
+    })}
+  </nav>
+  {enOnly && (
+    captionVisible ? (
+      <p class:list={["mt-1 text-caption", tc.caption]}>
+        English only on this page.
+      </p>
+    ) : (
+      <p class="sr-only">English only on this page.</p>
+    )
+  )}
+</div>

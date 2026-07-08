@@ -1,0 +1,49 @@
+---
+/*
+ * Accordion — groups AccordionItem children; enforces single-open by default.
+ *
+ * Single-open behaviour ships via a co-located inline `<script>` listening
+ * for native `toggle` events on direct <details> children (ADR-0004 §2,
+ * under the 50-line revisit-trigger ceiling). Setting `singleOpen={false}`
+ * ships markup-only — multiple items may stay open.
+ *
+ * The toggle handler is idempotent: closing a sibling triggers another
+ * toggle event, but that event sees `!item.open` and returns early — so
+ * rapid open/close (Story §Failure modes) stays consistent without
+ * re-entrancy guards.
+ */
+
+interface Props {
+  singleOpen?: boolean;
+  class?: string;
+}
+
+const { singleOpen = true, class: className = '' } = Astro.props;
+---
+
+<div
+  class:list={['flex flex-col', className]}
+  data-accordion
+  data-single-open={singleOpen ? 'true' : undefined}
+>
+  <slot />
+</div>
+
+<script>
+  const roots = document.querySelectorAll<HTMLElement>('[data-accordion][data-single-open="true"]');
+  for (const root of roots) {
+    const items = root.querySelectorAll<HTMLDetailsElement>(':scope > details');
+    for (const item of items) {
+      item.addEventListener('toggle', () => {
+        if (!item.open) {
+          return;
+        }
+        for (const sibling of items) {
+          if (sibling !== item) {
+            sibling.open = false;
+          }
+        }
+      });
+    }
+  }
+</script>

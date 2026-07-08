@@ -1,0 +1,408 @@
+---
+/*
+ * Site-wide Header — desktop horizontal nav + active-route + sticky-blur +
+ * IntersectionObserver Scroll Sentinel detector + native <dialog> mobile drawer.
+ *
+ * Layout (lg+): logo lockup · 5 nav items · LanguageSwitcher · Book-a-Demo CTA.
+ * Below lg: hamburger replaces horizontal nav and opens the right-slide
+ * <dialog> drawer wired in the co-located inline script.
+ *
+ * Active-route: build-time via `isActive()` from src/lib/i18n.ts (ADR-0005 §3).
+ * Locale-stripped prefix-match; `/` is exact-match so Home doesn't claim every
+ * page. The active link gets aria-current="page" + a text-width underline.
+ *
+ * Sticky-blur: the header carries a subtle baseline `bg-bg/60` +
+ * `backdrop-blur(4px)` from page load so it never reads as a fully transparent
+ * strip floating over hero content. The single IntersectionObserver in the
+ * co-located <script> observes the first [data-scroll-sentinel] in the
+ * document (the Scroll Sentinel convention per ADR-0005 §2); when it exits the
+ * viewport the header gains `.scrolled` and ramps to `bg-bg/82` +
+ * `backdrop-blur(8px)` + shadow + border. Pages with no sentinel render the
+ * unscrolled (baseline-blur) state forever — acceptable per ADR-0005 §2 and
+ * still visually distinct from the page beneath.
+ * prefers-reduced-motion snap is handled by the global CSS reset (ADR-0002 §A).
+ *
+ * Mobile drawer (ADR-0005 §1): native `<dialog>` + `showModal()` for the
+ * focus trap, Escape dismiss, and `role="dialog"` semantics. Inline script
+ * additionally handles backdrop-click and nav-link click dismissals, plus
+ * mirroring `aria-expanded` on the hamburger trigger. Drawer width caps at
+ * `min(80vw, 340px)` so it reads as a side panel — not a near-full-screen
+ * sheet — even at tablet-portrait. Drawer is `lg:hidden` so the desktop nav
+ * stays the canonical surface above the breakpoint.
+ *
+ * Mobile-header LanguageSwitcher is hidden (lg-only); the canonical mobile
+ * locale toggle lives inside the drawer footer, alongside the Book-a-Demo
+ * CTA. This keeps the mobile header to logo + hamburger so the trigger sits
+ * flush at the right gutter — the EN-only caption still appears inside the
+ * drawer's switcher when the visitor is on an `isEnOnlyPath()` route.
+ *
+ * MS nav labels are placeholder translations sufficient for the "long
+ * translation doesn't break layout" check in Story #15 AC §Failure modes —
+ * copy review can refine without touching structure.
+ */
+import { Image } from "astro:assets";
+
+import logoMark from "../assets/logo-mark.png";
+import logoWordmark from "../assets/logo-black.png";
+import Button from "./ui/Button.astro";
+import LanguageSwitcher from "./ui/LanguageSwitcher.astro";
+import { isActive, isEnOnlyPath, localeHref, type Locale } from "../lib/i18n";
+
+const currentLocale = (Astro.currentLocale ?? "en-GB") as Locale;
+const pathname = Astro.url.pathname;
+const isMs = currentLocale === "ms-MY";
+
+const NAV_ITEMS = [
+  { href: "/", en: "Home", ms: "Utama" },
+  { href: "/use-cases", en: "Use Cases", ms: "Kes Guna" },
+  { href: "/developers", en: "Developers", ms: "Developers" },
+  { href: "/pricing", en: "Pricing", ms: "Harga" },
+  { href: "/about", en: "About", ms: "Tentang" },
+] as const;
+
+const homeHref = localeHref("/", currentLocale);
+const ctaHref = localeHref("/book-a-demo", currentLocale);
+const ctaLabel = isMs ? "Tempah Demo" : "Book a Demo";
+const enOnly = isEnOnlyPath(pathname);
+
+const openMenuLabel = isMs ? "Buka menu" : "Open menu";
+const closeMenuLabel = isMs ? "Tutup menu" : "Close menu";
+const drawerTitleLabel = isMs ? "Menu utama" : "Main menu";
+const drawerNavLabel = isMs ? "Menu mudah alih" : "Mobile primary";
+---
+
+<header
+  class:list={[
+    "fixed z-40",
+    "border-b border-transparent",
+  ]}
+>
+  <div
+    class="flex h-[68px] items-center justify-between gap-3 pl-5 pr-3 lg:grid lg:grid-cols-[auto_1fr_auto] lg:gap-5 lg:px-5"
+  >
+    <a
+      href={homeHref}
+      aria-label="TRINITY WIZARDS — Home"
+      class:list={[
+        "inline-flex min-h-[44px] items-center justify-self-start",
+        "rounded-btn",
+        "focus-visible:outline-2 focus-visible:outline-offset-[2px] focus-visible:outline-ink-heading",
+      ]}
+    >
+      <Image
+        src={logoMark}
+        alt="TRINITY WIZARDS"
+        widths={[40, 80, 120]}
+        sizes="40px"
+        class="size-5 lg:hidden"
+      />
+      <Image
+        src={logoWordmark}
+        alt="TRINITY WIZARDS"
+        widths={[180, 360]}
+        sizes="180px"
+        class="hidden h-3 w-auto lg:block"
+      />
+    </a>
+
+    <nav
+      aria-label="Primary"
+      class="hidden items-center justify-self-center gap-1 lg:flex"
+    >
+      {
+        NAV_ITEMS.map((item) => {
+          const href = localeHref(item.href, currentLocale);
+          const active = isActive(item.href, pathname);
+          const label = isMs ? item.ms : item.en;
+          return (
+            <a
+              href={href}
+              aria-current={active ? "page" : undefined}
+              class:list={[
+                "relative inline-flex items-center justify-center whitespace-nowrap",
+                "rounded-btn px-2 py-1",
+                "text-body text-ink-body",
+                "transition-colors hover:text-ink-heading",
+                "focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ink-heading",
+              ]}
+            >
+              {label}
+              {active && (
+                <span
+                  aria-hidden="true"
+                  class="absolute right-2 bottom-[2px] left-2 h-[2px] rounded-[2px] bg-accent"
+                />
+              )}
+            </a>
+          );
+        })
+      }
+    </nav>
+
+    <div class="flex items-center justify-self-end gap-2">
+      <div class="hidden lg:block">
+        <LanguageSwitcher
+          tone="on-light"
+          enOnly={enOnly}
+          captionVisible={false}
+        />
+      </div>
+      <div class="hidden lg:block">
+        <Button href={ctaHref} variant="primary" class="whitespace-nowrap">
+          {ctaLabel}
+        </Button>
+      </div>
+      <button
+        id="mobile-drawer-trigger"
+        type="button"
+        aria-expanded="false"
+        aria-controls="mobile-drawer"
+        aria-label={openMenuLabel}
+        class:list={[
+          "lg:hidden",
+          "inline-flex min-h-[44px] min-w-[44px] items-center justify-center",
+          "rounded-btn text-ink-heading",
+          "focus-visible:outline-2 focus-visible:outline-offset-[2px] focus-visible:outline-ink-heading",
+        ]}
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+          class="size-3"
+        >
+          <path
+            d="M4 7h16M4 12h16M4 17h16"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+        </svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<dialog
+  id="mobile-drawer"
+  aria-labelledby="mobile-drawer-title"
+  class:list={[
+    "lg:hidden",
+    "text-ink-heading",
+  ]}
+>
+  <div class="flex h-dvh max-h-screen flex-col">
+    <div class="flex h-[68px] items-center justify-between gap-3 pl-5 pr-3">
+      <span id="mobile-drawer-title" class="sr-only">{drawerTitleLabel}</span>
+      <Image
+        src={logoWordmark}
+        alt="TRINITY WIZARDS"
+        widths={[180, 360]}
+        sizes="180px"
+        class="h-3 w-auto"
+      />
+      <button
+        type="button"
+        data-drawer-close
+        aria-label={closeMenuLabel}
+        class:list={[
+          "inline-flex min-h-[44px] min-w-[44px] items-center justify-center",
+          "rounded-pill border border-border text-ink-heading",
+          "transition-colors hover:bg-bg-alt",
+          "focus-visible:outline-2 focus-visible:outline-offset-[2px] focus-visible:outline-ink-heading",
+        ]}
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+          class="size-3"
+        >
+          <path
+            d="M6 6 18 18M6 18 18 6"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+        </svg>
+      </button>
+    </div>
+
+    <nav
+      aria-label={drawerNavLabel}
+      class="flex flex-1 flex-col gap-1 overflow-y-auto px-5 py-3"
+    >
+      {
+        NAV_ITEMS.map((item) => {
+          const href = localeHref(item.href, currentLocale);
+          const active = isActive(item.href, pathname);
+          const label = isMs ? item.ms : item.en;
+          return (
+            <a
+              href={href}
+              aria-current={active ? "page" : undefined}
+              class:list={[
+                "group/drawer-link inline-flex min-h-[44px] items-center self-start",
+                "rounded-btn px-2",
+                "text-body-l",
+                "transition-colors",
+                "focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ink-heading",
+                active
+                  ? "font-semibold text-ink-heading"
+                  : "text-ink-body hover:text-ink-heading",
+              ]}
+            >
+              <span class="relative inline-block">
+                {label}
+                <span
+                  aria-hidden="true"
+                  class:list={[
+                    "pointer-events-none absolute left-[0] right-[0] -bottom-1 h-[2px] rounded-[2px] bg-accent",
+                    "transition-opacity",
+                    active
+                      ? "opacity-100"
+                      : "opacity-0 group-hover/drawer-link:opacity-100",
+                  ]}
+                />
+              </span>
+            </a>
+          );
+        })
+      }
+    </nav>
+
+    <div class="flex flex-col gap-2 border-t border-border px-5 py-3">
+      <div class="flex justify-center">
+        <LanguageSwitcher tone="on-light" enOnly={enOnly} />
+      </div>
+      <Button href={ctaHref} variant="primary" class="w-full">
+        {ctaLabel}
+      </Button>
+    </div>
+  </div>
+</dialog>
+
+<style>
+  /* Positioning + sticky-blur visual state (ADR-0005 §2). The header carries a
+     subtle baseline backdrop blur from page load so the chrome reads as a
+     surface — not as a fully transparent strip floating over content. The
+     `.scrolled` class is toggled by the IntersectionObserver below; it ramps
+     opacity, blur, shadow, and the bottom border to the stronger state.
+     Tailwind v4's `inset-x-0` / `top-0` utilities don't compile in this
+     codebase since `--spacing-*: initial` (ADR-0002 §3) removes the
+     `--spacing-0` token they depend on — set the four insets directly. */
+  header {
+    top: 0;
+    left: 0;
+    right: 0;
+    background-color: color-mix(in oklab, var(--color-bg) 60%, transparent);
+    backdrop-filter: blur(4px);
+    transition:
+      background-color 200ms ease,
+      backdrop-filter 200ms ease,
+      box-shadow 200ms ease,
+      border-color 200ms ease;
+  }
+
+  header.scrolled {
+    background-color: color-mix(in oklab, var(--color-bg) 82%, transparent);
+    backdrop-filter: blur(8px);
+    box-shadow:
+      0 1px 2px 0 rgb(0 0 0 / 5%),
+      0 0 0 0 transparent;
+    border-bottom-color: var(--color-border);
+  }
+
+  /* Mobile drawer — right-side slide-in panel using native <dialog>. The
+     defaults position the dialog centered with auto margins; override to a
+     right-aligned full-height side panel. `transition-behavior: allow-
+     discrete` + `@starting-style` opt into the modern animation flow where
+     the browser interpolates transform *and* the discrete `display`/`overlay`
+     changes that fire when `[open]` is toggled. Older engines without that
+     support simply snap into place — equivalent to prefers-reduced-motion. */
+  dialog#mobile-drawer {
+    position: fixed;
+    inset: 0 0 0 auto;
+    margin: 0;
+    padding: 0;
+    width: min(80vw, 340px);
+    max-width: 100vw;
+    height: 100dvh;
+    max-height: 100dvh;
+    border: 0;
+    background-color: var(--color-bg);
+    color: var(--color-ink-heading);
+    transform: translateX(100%);
+    transition:
+      transform 200ms ease-out,
+      overlay 200ms ease-out allow-discrete,
+      display 200ms ease-out allow-discrete;
+  }
+
+  dialog#mobile-drawer[open] {
+    transform: translateX(0);
+  }
+
+  @starting-style {
+    dialog#mobile-drawer[open] {
+      transform: translateX(100%);
+    }
+  }
+
+  dialog#mobile-drawer::backdrop {
+    background-color: rgb(0 0 0 / 45%);
+  }
+</style>
+
+<script>
+  /* Header inline script — single block, two concerns:
+       1. Scroll Sentinel detector (ADR-0005 §2)
+       2. Mobile drawer open/close wiring (ADR-0005 §1)
+
+     Stays well under ADR-0004 §4's 50-line ceiling. */
+
+  const header = document.querySelector<HTMLElement>('header');
+  const sentinel = document.querySelector<HTMLElement>('[data-scroll-sentinel]');
+  if (header && sentinel) {
+    const io = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        header.classList.toggle('scrolled', !entry.isIntersecting);
+      }
+    });
+    io.observe(sentinel);
+  }
+
+  const drawer = document.querySelector<HTMLDialogElement>('dialog#mobile-drawer');
+  const trigger = document.querySelector<HTMLButtonElement>('#mobile-drawer-trigger');
+  if (drawer && trigger) {
+    const syncExpanded = () => {
+      trigger.setAttribute('aria-expanded', String(drawer.open));
+    };
+
+    trigger.addEventListener('click', () => {
+      drawer.showModal();
+      requestAnimationFrame(syncExpanded);
+    });
+
+    drawer.querySelector<HTMLButtonElement>('[data-drawer-close]')?.addEventListener(
+      'click',
+      () => drawer.close(),
+    );
+
+    // Native <dialog> does not close on backdrop click — wire it manually.
+    drawer.addEventListener('click', (event) => {
+      if (event.target === drawer) {
+        drawer.close();
+      }
+    });
+
+    // Defensive: nav-link click would also reload the page, but explicit close
+    // prevents stale-state edge cases in future SPA-style navigation.
+    drawer.querySelectorAll('a').forEach((anchor) => {
+      anchor.addEventListener('click', () => drawer.close());
+    });
+
+    // `close` fires for every dismiss path (Escape, .close(), submit form).
+    drawer.addEventListener('close', syncExpanded);
+  }
+</script>

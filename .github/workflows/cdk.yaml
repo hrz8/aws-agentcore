@@ -1,0 +1,103 @@
+# Reusable CDK runner.
+#
+# Per-app workflows (website.yaml, and future agent/dashboard/middleware/…)
+# call this with their target stack path. Because the repo's CDK stack is
+# monolithic (Nd8Stack under each Nd8Stage), every caller passes
+# stack: "${stage}/Nd8Stack" today. That contract is a parameter, not a
+# hard-code — split-stack refactors won't require touching this file.
+#
+# Required GitHub Actions repository variables:
+#   AWS_ACCOUNT_ID    — 12-digit target account
+#   AWS_REGION        — target region
+#   AWS_ROLE_CDK      — IAM role name (assumed via OIDC) with CDK + S3 sync
+#                        + CloudFront invalidation permissions
+name: CDK Run
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+on:
+  workflow_call:
+    inputs:
+      stage:
+        type: string
+        required: true
+        description: "Dev or Prod"
+      stack:
+        type: string
+        required: true
+        description: "CDK stack path, e.g. Dev/Nd8Stack"
+      command:
+        type: string
+        required: true
+        description: "diff or deploy"
+
+jobs:
+  determine-role:
+    name: Determine Role
+    runs-on: ubuntu-latest
+    outputs:
+      role: ${{ steps.set-role.outputs.role }}
+    steps:
+      - id: set-role
+        run: |
+          ROLE="${{ vars.AWS_ROLE_CDK }}"
+
+          echo "Resolved role: $ROLE"
+          echo "role=$ROLE" >> "$GITHUB_OUTPUT"
+
+  run:
+    name: cdk ${{ inputs.command }} ${{ inputs.stack }}
+    needs: determine-role
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Print context
+        run: |
+          echo "Action:  cdk ${{ inputs.command }}"
+          echo "Stage:   ${{ inputs.stage }}"
+          echo "Stack:   ${{ inputs.stack }}"
+          echo "Region:  ${{ vars.AWS_REGION }}"
+          echo "Account: ${{ vars.AWS_ACCOUNT_ID }}"
+          echo "Commit:  ${{ github.sha }}"
+          echo "Event:   ${{ github.event_name }} (ref=${{ github.ref }})"
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/${{ needs.determine-role.outputs.role }}
+          role-session-name: githubactions-${{ inputs.stage }}-${{ inputs.command }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Run cdk ${{ inputs.command }}
+        env:
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+        run: |
+          case "${{ inputs.command }}" in
+            diff)
+              pnpm --filter infra exec cdk diff '${{ inputs.stack }}'
+              ;;
+            deploy)
+              pnpm --filter infra exec cdk deploy '${{ inputs.stack }}' --require-approval never
+              ;;
+            *)
+              echo "::error::Unknown command '${{ inputs.command }}' (expected: diff, deploy)"
+              exit 1
+              ;;
+          esac

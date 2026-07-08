@@ -1,0 +1,173 @@
+# Website — build, deploy infra (if needed), sync content, invalidate CDN.
+#
+# Trigger matrix:
+#   pull_request → main    : cdk diff on Dev
+#   push         → main    : cdk deploy on Dev + s3 sync
+#   push tag  website@v*   : cdk deploy on Prod + s3 sync
+#   workflow_dispatch      : manual, pick stage + command
+#
+# Concurrency group: `nd8-Nd8Stack-${ref}` — SHARED across per-app workflows
+# that target the same monolithic Nd8Stack so their CDK jobs serialise
+# (CloudFormation rejects concurrent stack updates anyway; queueing here
+# gives cleaner run-history than surfaced errors).
+#
+# When adding another app workflow (agent, dashboard, middleware, frontend):
+#   1. Copy this file to <app>-deploy.yaml
+#   2. Swap the `paths:` filters to that app's source paths + its bit of infra
+#   3. Swap the `refs/tags/website@v*` pattern to `<app>@v*`
+#   4. Keep the same concurrency group (`nd8-Nd8Stack-${ref}`)
+#   5. Point the `stack` input at `${stage}/Nd8Stack` (unchanged today)
+#   6. Replace/remove `sync-content` — website uses scripts/website-push.sh;
+#      dashboard would run `pnpm --filter dashboard build` before the CDK
+#      job (BucketDeployment picks it up); agent/middleware/frontend have
+#      no post-deploy content step at all.
+name: Website Deploy
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+on:
+  workflow_dispatch:
+    inputs:
+      command:
+        description: "cdk command"
+        required: true
+        default: diff
+        type: choice
+        options:
+          - diff
+          - deploy
+      stage:
+        description: "Stage"
+        required: true
+        default: Dev
+        type: choice
+        options:
+          - Dev
+          - Prod
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'apps/website/**'
+      - 'infra/lib/stack.ts'
+      - 'infra/lib/stage.ts'
+      - 'infra/lib/config.ts'
+      - 'infra/lib/helpers.ts'
+      - 'infra/lib/constructs/website*.ts'
+      - 'infra/bin/**'
+      - 'infra/package.json'
+      - 'infra/cdk.json'
+      - 'infra/tsconfig.json'
+      - 'scripts/website-push.sh'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/website-deploy.yaml'
+      - '.github/workflows/cdk.yaml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/website/**'
+      - 'infra/lib/stack.ts'
+      - 'infra/lib/stage.ts'
+      - 'infra/lib/config.ts'
+      - 'infra/lib/helpers.ts'
+      - 'infra/lib/constructs/website*.ts'
+      - 'infra/bin/**'
+      - 'infra/package.json'
+      - 'infra/cdk.json'
+      - 'infra/tsconfig.json'
+      - 'scripts/website-push.sh'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/website-deploy.yaml'
+      - '.github/workflows/cdk.yaml'
+    tags:
+      - 'website@v*'
+
+concurrency:
+  group: nd8-Nd8Stack-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  determine-stage:
+    name: Determine Stage & Command
+    runs-on: ubuntu-latest
+    outputs:
+      stage: ${{ steps.detect.outputs.stage }}
+      command: ${{ steps.detect.outputs.command }}
+      role: ${{ steps.detect.outputs.role }}
+    steps:
+      - id: detect
+        run: |
+          echo "Event: ${{ github.event_name }}"
+          echo "Ref:   ${{ github.ref }}"
+
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            STAGE="${{ inputs.stage }}"
+            COMMAND="${{ inputs.command }}"
+          elif [[ "${{ github.ref }}" == refs/tags/website@v* ]]; then
+            STAGE="Prod"
+            COMMAND="deploy"
+          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            STAGE="Dev"
+            COMMAND="diff"
+          elif [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
+            STAGE="Dev"
+            COMMAND="deploy"
+          else
+            echo "::error::Unsupported trigger: ${{ github.event_name }} on ${{ github.ref }}"
+            exit 1
+          fi
+
+          ROLE="${{ vars.AWS_ROLE_CDK }}"
+
+          echo "Stage:   $STAGE"
+          echo "Command: $COMMAND"
+          echo "Role:    $ROLE"
+          {
+            echo "stage=$STAGE"
+            echo "command=$COMMAND"
+            echo "role=$ROLE"
+          } >> "$GITHUB_OUTPUT"
+
+  cdk:
+    name: CDK ${{ needs.determine-stage.outputs.command }} (${{ needs.determine-stage.outputs.stage }})
+    needs: determine-stage
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/cdk.yaml
+    with:
+      stage: ${{ needs.determine-stage.outputs.stage }}
+      stack: ${{ needs.determine-stage.outputs.stage }}/Nd8Stack
+      command: ${{ needs.determine-stage.outputs.command }}
+
+  sync-content:
+    name: Sync website content to S3
+    needs: [determine-stage, cdk]
+    if: needs.determine-stage.outputs.command == 'deploy'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/${{ needs.determine-stage.outputs.role }}
+          role-session-name: githubactions-website-sync-${{ needs.determine-stage.outputs.stage }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Build + sync to S3 + invalidate CloudFront
+        run: ./scripts/website-push.sh ${{ needs.determine-stage.outputs.stage }}

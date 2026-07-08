@@ -1,0 +1,663 @@
+---
+/*
+ * /internal/primitives — Showcase Surface for the nine UI Primitives shipped
+ * across Story #14 (atomic in PR #15, composite in PR #16). Renders every
+ * variant × tone × state × breakpoint behind the same INCLUDE_DESIGN_TOKENS
+ * gate as /internal/design-tokens (ADR-0002 §8).
+ *
+ * Interaction-only states (hover / focus-visible / active) are not rendered
+ * as standalone cells — they're CSS pseudo-classes the reviewer triggers on
+ * each control. Cells are labelled "(triggerable)" so the reviewer knows to
+ * pointer / Tab through and verify the state visually.
+ *
+ * Breakpoints (Tailwind v4 defaults):
+ *   mobile  <640px
+ *   sm      ≥640px
+ *   md      ≥768px
+ *   lg      ≥1024px
+ *   xl      ≥1280px
+ * Reviewer resizes the viewport to validate responsive behaviour. The page
+ * itself is fluid; ComparisonTable carries an explicit layout shift at
+ * <640px (stacked-row-cards per Task #13 HITL decision).
+ *
+ * Scope note: Task body lists Button × 3 sizes — current Button API has no
+ * size prop and the parent Story AC does not require one. Single-size
+ * rendering used; size axis tracked as a forward-looking decision.
+ */
+import { INCLUDE_DESIGN_TOKENS } from "astro:env/server";
+import Layout from "../../layouts/Layout.astro";
+import Accordion from "../../components/ui/Accordion.astro";
+import AccordionItem from "../../components/ui/AccordionItem.astro";
+import Badge from "../../components/ui/Badge.astro";
+import Button from "../../components/ui/Button.astro";
+import Card from "../../components/ui/Card.astro";
+import ComparisonTable from "../../components/ui/ComparisonTable.astro";
+import FormField from "../../components/ui/FormField.astro";
+import LanguageSwitcher from "../../components/ui/LanguageSwitcher.astro";
+import SectionHeading from "../../components/ui/SectionHeading.astro";
+import Tag from "../../components/ui/Tag.astro";
+
+if (INCLUDE_DESIGN_TOKENS !== "1") {
+  return new Response(null, { status: 404 });
+}
+
+const buttonVariants = ["primary", "secondary", "ghost", "link"] as const;
+const badgeTones = ["positive", "pending", "info", "neutral"] as const;
+const badgeToneCopy = {
+  positive: "Available now",
+  pending: "Coming Q4 2026",
+  info: "Now onboarding enterprise design partners",
+  neutral: "Beta access",
+} as const;
+const industries = ["Airlines", "Banking", "Retail", "Hospitality", "Healthcare"];
+const formTypes = ["text", "email", "tel", "select", "textarea"] as const;
+// `required` rides along on the "filled" demo to surface the asterisk affordance
+// in the showcase; required isn't a fifth state, so no dedicated cell.
+const formStates = [
+  { key: "default", label: "default", value: undefined, error: undefined, disabled: false },
+  { key: "filled", label: "filled", value: "filled value", error: undefined, disabled: false },
+  { key: "error", label: "error", value: "not-an-email", error: "Enter a valid value.", disabled: false },
+  { key: "disabled", label: "disabled", value: "locked", error: undefined, disabled: true },
+] as const;
+const focusNote =
+  "Focused state is a CSS pseudo-class — Tab into any control above to verify.";
+
+const longMs =
+  "Sekarang sedang membuka pendaftaran rakan reka bentuk perusahaan terpilih";
+
+const pricingColumns = [
+  { label: "Starter", description: "Pilot project" },
+  { label: "Pro", description: "Production teams", highlight: true },
+  { label: "Enterprise", description: "Custom contract" },
+];
+const pricingRows = [
+  { label: "AI Agents", helper: "Concurrent in production",
+    cells: ["3", "25", "Unlimited"] },
+  { label: "Threads / month", cells: ["10k", "500k", "Custom"] },
+  { label: "Vendor models", cells: ["check", "check", "check"] },
+  { label: "Custom MCP tools", cells: ["partial", "check", "check"] },
+  { label: "BYOK provider credentials", cells: ["cross", "check", "check"] },
+  { label: "SAML SSO", cells: ["cross", "partial", "check"] },
+  { label: "Dedicated support", helper: "24h response SLA",
+    cells: ["dash", "Email", "Slack channel"] },
+];
+
+const comparisonColumns = [
+  { label: "TWAI" },
+  { label: "Build your own" },
+  { label: "Vendor X" },
+  { label: "Vendor Y" },
+];
+const comparisonRows = [
+  { label: "Multi-tenant runtime",
+    cells: ["check", "cross", "partial", "check"] },
+  { label: "Immutable Agent Versions",
+    cells: ["check", "cross", "cross", "partial"] },
+  { label: "Tier-2 template tools (no tenant code on platform)",
+    cells: ["check", "dash", "cross", "cross"] },
+  { label: "BYOK model provider", cells: ["check", "check", "partial", "cross"] },
+  { label: "Time-to-first-Agent",
+    cells: ["under 1 day", "4–8 weeks", "1–2 weeks", "2–4 weeks"] },
+];
+
+const sections = [
+  { id: "button", label: "Button" },
+  { id: "badge", label: "Badge" },
+  { id: "tag", label: "Tag" },
+  { id: "language-switcher", label: "LanguageSwitcher" },
+  { id: "section-heading", label: "SectionHeading" },
+  { id: "form-field", label: "FormField" },
+  { id: "card", label: "Card" },
+  { id: "accordion", label: "Accordion" },
+  { id: "comparison-table", label: "ComparisonTable" },
+];
+---
+
+<Layout
+  title="UI primitives · nd8.ai"
+  description="UI Primitive showcase — dev/preview only"
+  noindex
+  chrome={false}
+>
+  <div class="mx-auto max-w-5xl px-4 py-7">
+    <header class="mb-7">
+      <h1>UI primitives</h1>
+      <p class="mt-2 text-ink-body">
+        Source of truth: Figma node <code>29:5971</code> (Story <a
+          class="underline decoration-1 underline-offset-4"
+          href="https://github.com/trinitywizards/aisaas-product/issues/14"
+          rel="noreferrer">#14</a
+        >). Primitives live in <code>apps/website/src/components/ui/</code>.
+        Dev/preview-only — production builds omit this page via <code
+          >INCLUDE_DESIGN_TOKENS</code
+        >.
+      </p>
+      <p class="mt-2 text-ink-body">
+        Resize the viewport to verify <code>mobile (&lt;640px) / sm (≥640) / md
+        (≥768) / lg (≥1024) / xl (≥1280)</code>. ComparisonTable explicitly
+        shifts to stacked-row-cards under <code>640px</code>; other primitives
+        are fluid.
+      </p>
+      <p class="mt-2 text-ink-body">
+        Interactive states (<em>hover</em>, <em>focus-visible</em>, <em
+          >active</em
+        >) are CSS pseudo-classes — pointer-over or Tab through each control
+        to verify. Static cells are labelled with the state they render.
+      </p>
+      <nav aria-label="On this page" class="mt-3">
+        <ul class="flex flex-wrap gap-2 text-caption">
+          {
+            sections.map((s) => (
+              <li>
+                <a
+                  href={`#${s.id}`}
+                  class="inline-flex items-center rounded-pill border border-border bg-surface px-2 py-1 text-ink-body hover:bg-bg-alt focus-visible:outline-2 focus-visible:outline-offset-[2px] focus-visible:outline-ink-heading"
+                >
+                  {s.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+    </header>
+
+    {/* ============================== BUTTON ============================== */}
+    <section id="button" class="mb-7" aria-labelledby="h-button">
+      <h2 id="h-button" class="mb-4">Button</h2>
+
+      <h3 class="mt-4 mb-2 text-h3">Variants × button element</h3>
+      <div
+        class="grid grid-cols-1 gap-3 rounded-card border border-border bg-surface p-3 sm:grid-cols-2 lg:grid-cols-4"
+      >
+        {
+          buttonVariants.map((v) => (
+            <div class="flex flex-col items-start gap-2">
+              <code class="text-caption text-ink-muted">variant="{v}"</code>
+              <Button variant={v}>{v} action</Button>
+              <Button variant={v} disabled>
+                Disabled
+              </Button>
+              <Button variant={v} loading>
+                Loading
+              </Button>
+            </div>
+          ))
+        }
+      </div>
+
+      <h3 class="mt-4 mb-2 text-h3">Variants × anchor element (href)</h3>
+      <div
+        class="grid grid-cols-1 gap-3 rounded-card border border-border bg-surface p-3 sm:grid-cols-2 lg:grid-cols-4"
+      >
+        {
+          buttonVariants.map((v) => (
+            <div class="flex flex-col items-start gap-2">
+              <code class="text-caption text-ink-muted">
+                variant="{v}" href="#"
+              </code>
+              <Button variant={v} href="#">{v} link</Button>
+              <Button variant={v} href="#" disabled>
+                Disabled link
+              </Button>
+              <Button variant={v} href="#" loading>
+                Loading link
+              </Button>
+            </div>
+          ))
+        }
+      </div>
+
+      <p class="mt-3 text-caption text-ink-body">
+        Triggerable states: hover, focus-visible (Tab in), active (mouse-down /
+        Space). Disabled <code>&lt;a&gt;</code> renders as inert
+        <code>&lt;span aria-disabled="true" tabindex="-1"&gt;</code> per
+        Button.astro contract.
+      </p>
+    </section>
+
+    {/* ============================== BADGE =============================== */}
+    <section id="badge" class="mb-7" aria-labelledby="h-badge">
+      <h2 id="h-badge" class="mb-4">Badge</h2>
+      <div
+        class="grid grid-cols-1 gap-4 rounded-card border border-border bg-surface p-3 sm:grid-cols-2"
+      >
+        <div class="flex flex-col items-start gap-2">
+          <code class="text-caption text-ink-muted">dot=false</code>
+          {
+            badgeTones.map((t) => (
+              <Badge tone={t}>
+                {badgeToneCopy[t]}
+              </Badge>
+            ))
+          }
+        </div>
+        <div class="flex flex-col items-start gap-2">
+          <code class="text-caption text-ink-muted">dot=true</code>
+          {
+            badgeTones.map((t) => (
+              <Badge tone={t} dot>
+                {badgeToneCopy[t]}
+              </Badge>
+            ))
+          }
+        </div>
+      </div>
+
+      <h3 class="mt-4 mb-2 text-h3">Long localized text (MS, narrow column)</h3>
+      <div
+        class="grid max-w-xs grid-cols-1 gap-2 rounded-card border border-border bg-surface p-3"
+      >
+        <Badge tone="info" dot><span lang="ms">{longMs}</span></Badge>
+        <p class="text-caption text-ink-muted">
+          Pill wraps cleanly across lines — no <code>whitespace-nowrap</code>.
+        </p>
+      </div>
+    </section>
+
+    {/* =============================== TAG ================================ */}
+    <section id="tag" class="mb-7" aria-labelledby="h-tag">
+      <h2 id="h-tag" class="mb-4">Tag</h2>
+      <div
+        class="rounded-card border border-border bg-surface p-3"
+      >
+        <code class="mb-2 block text-caption text-ink-muted">
+          static (no href)
+        </code>
+        <ul class="mb-3 flex flex-wrap gap-2">
+          {industries.map((i) => <li><Tag>{i}</Tag></li>)}
+        </ul>
+        <code class="mb-2 block text-caption text-ink-muted">href variant</code>
+        <ul class="flex flex-wrap gap-2">
+          {
+            industries.map((i) => (
+              <li>
+                <Tag href="#tag">{i}</Tag>
+              </li>
+            ))
+          }
+        </ul>
+        <p class="mt-3 text-caption text-ink-muted">
+          Triggerable states (href variant): hover, focus-visible.
+        </p>
+      </div>
+    </section>
+
+    {/* ========================= LANGUAGE SWITCHER ======================== */}
+    <section
+      id="language-switcher"
+      class="mb-7"
+      aria-labelledby="h-language-switcher"
+    >
+      <h2 id="h-language-switcher" class="mb-4">LanguageSwitcher</h2>
+
+      <h3 class="mt-4 mb-2 text-h3">tone="on-light" · default surface</h3>
+      <div
+        class="flex flex-col items-start gap-4 rounded-card border border-border bg-surface p-3"
+      >
+        <div>
+          <code class="mb-2 block text-caption text-ink-muted">
+            tone="on-light" (default)
+          </code>
+          <LanguageSwitcher />
+        </div>
+        <div>
+          <code class="mb-2 block text-caption text-ink-muted">
+            tone="on-light" enOnly — EN locked active, MS inert
+          </code>
+          <LanguageSwitcher tone="on-light" enOnly />
+        </div>
+      </div>
+
+      <h3 class="mt-4 mb-2 text-h3">tone="on-dark" · dark backdrop</h3>
+      <div
+        class="flex flex-col items-start gap-4 rounded-card border border-ink-heading bg-ink-heading p-3"
+      >
+        <div>
+          <code class="mb-2 block text-caption text-white/60">
+            tone="on-dark"
+          </code>
+          <LanguageSwitcher tone="on-dark" />
+        </div>
+        <div>
+          <code class="mb-2 block text-caption text-white/60">
+            tone="on-dark" enOnly — EN locked active, MS inert
+          </code>
+          <LanguageSwitcher tone="on-dark" enOnly />
+        </div>
+      </div>
+
+      <p class="mt-3 text-caption text-ink-muted">
+        Active locale is URL-driven outside <code>enOnly</code> (path under
+        <code>/ms/</code> ⇒ MS active); inside <code>enOnly</code> EN is locked
+        active and MS renders inert (<code>aria-disabled="true"</code>,
+        <code>tabindex="-1"</code>, <code>opacity-60</code>) so the visual + a11y
+        trees stay aligned. Routing wiring lands in Epic 10; mirror this page
+        under <code>/ms/internal/primitives</code> to see the URL-driven swap
+        once the MS sub-tree exists. Triggerable: hover, focus-visible (Tab in).
+      </p>
+    </section>
+
+    {/* ========================== SECTION HEADING ========================= */}
+    <section
+      id="section-heading"
+      class="mb-7"
+      aria-labelledby="h-section-heading"
+    >
+      <h2 id="h-section-heading" class="mb-4">SectionHeading</h2>
+
+      <h3 class="mt-4 mb-2 text-h3">4 visual levels (without lede)</h3>
+      <div
+        class="flex flex-col gap-4 rounded-card border border-border bg-surface p-3"
+      >
+        <SectionHeading visualLevel="display" title="Display — page hero" />
+        <SectionHeading visualLevel="h1" title="H1 — top of page" />
+        <SectionHeading visualLevel="h2" title="H2 — section header" />
+        <SectionHeading visualLevel="h3" title="H3 — sub-section" />
+      </div>
+
+      <h3 class="mt-4 mb-2 text-h3">With eyebrow + lede slot</h3>
+      <div
+        class="flex flex-col gap-5 rounded-card border border-border bg-surface p-3"
+      >
+        <SectionHeading
+          eyebrow="EYEBROW"
+          visualLevel="h1"
+          title="Title with eyebrow and lede"
+        >
+          <p slot="lede">
+            Lede content sits below the title, in <code>ink-body</code> at <code
+              >text-body-l</code
+            > — clears AAA contrast on every documented background.
+          </p>
+        </SectionHeading>
+        <SectionHeading
+          eyebrow="ALT EYEBROW"
+          visualLevel="h2"
+          title="H2 with eyebrow, no lede"
+        />
+      </div>
+
+      <h3 class="mt-4 mb-2 text-h3">Semantic level decoupled from visual</h3>
+      <div
+        class="flex flex-col gap-3 rounded-card border border-border bg-surface p-3"
+      >
+        <SectionHeading
+          level={2}
+          visualLevel="display"
+          title="Semantic h2, visual display"
+        />
+        <SectionHeading
+          level={3}
+          visualLevel="h1"
+          title="Semantic h3, visual h1"
+        />
+      </div>
+    </section>
+
+    {/* ============================ FORM FIELD ============================ */}
+    <section id="form-field" class="mb-7" aria-labelledby="h-form-field">
+      <h2 id="h-form-field" class="mb-4">FormField</h2>
+      <div
+        class="rounded-card border border-border bg-surface p-3"
+      >
+        <p class="mb-3 text-caption text-ink-muted">
+          The error live region (<code>role="alert" aria-live="polite"</code>)
+          is always present in the DOM — verify via DevTools. Each control
+          declares <code>aria-describedby</code> referencing both the error and
+          helper ids so screen readers find them once populated.
+        </p>
+        <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {
+            formTypes.map((t) =>
+              formStates.map((s) => {
+                const fieldName = `${t}-${s.key}`;
+                const labelText = `${t} (${s.label})`;
+                const baseProps = {
+                  name: fieldName,
+                  label: labelText,
+                  type: t,
+                  helper: "Helper text — hidden when error is set.",
+                  disabled: s.disabled,
+                  required: s.key === "filled",
+                  ...(s.value !== undefined ? { value: s.value } : {}),
+                  ...(s.error !== undefined ? { error: s.error } : {}),
+                };
+                if (t === "select") {
+                  return (
+                    <FormField
+                      {...baseProps}
+                      placeholder="Choose one…"
+                      options={[
+                        { value: "filled value", label: "Filled value" },
+                        { value: "locked", label: "Locked" },
+                        { value: "other", label: "Other" },
+                      ]}
+                    />
+                  );
+                }
+                if (t === "textarea") {
+                  return <FormField {...baseProps} rows={3} placeholder="Type here…" />;
+                }
+                return (
+                  <FormField
+                    {...baseProps}
+                    placeholder={
+                      t === "email"
+                        ? "name@example.com"
+                        : t === "tel"
+                          ? "+60 12 345 6789"
+                          : "Type here…"
+                    }
+                    autocomplete={
+                      t === "email" ? "email" : t === "tel" ? "tel" : undefined
+                    }
+                  />
+                );
+              })
+            )
+          }
+        </div>
+        <p class="mt-3 text-caption text-ink-muted">{focusNote}</p>
+      </div>
+    </section>
+
+    {/* ============================== CARD ================================ */}
+    <section id="card" class="mb-7" aria-labelledby="h-card">
+      <h2 id="h-card" class="mb-4">Card</h2>
+      <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+        <Card title="With icon · with footer · static">
+          <Fragment slot="icon">
+            <svg
+              viewBox="0 0 24 24"
+              width="24"
+              height="24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <path d="M12 2 4 7l8 5 8-5-8-5z" />
+              <path d="M4 17l8 5 8-5" />
+              <path d="M4 12l8 5 8-5" />
+            </svg>
+          </Fragment>
+          Body slot — Jobs strip example with all parts present.
+          <Fragment slot="footer">Updated 2 days ago</Fragment>
+        </Card>
+
+        <Card title="No icon · with footer · static">
+          Body slot — Templates section example, icon omitted.
+          <Fragment slot="footer">Read more →</Fragment>
+        </Card>
+
+        <Card title="With icon · no footer · static">
+          <Fragment slot="icon">
+            <svg
+              viewBox="0 0 24 24"
+              width="24"
+              height="24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 7v5l3 3" />
+            </svg>
+          </Fragment>
+          Body slot — About-section example, no footer.
+        </Card>
+
+        <Card title="No icon · no footer · static">
+          Body slot — minimal shape, body-only.
+        </Card>
+
+        <Card title="With icon · with footer · href" href="#card-link-1">
+          <Fragment slot="icon">
+            <svg
+              viewBox="0 0 24 24"
+              width="24"
+              height="24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <path d="M5 12h14" />
+              <path d="M13 5l7 7-7 7" />
+            </svg>
+          </Fragment>
+          Body slot — entire card wraps in <code>&lt;a&gt;</code>; one focus
+          stop announces title + body as the accessible name.
+          <Fragment slot="footer">→ Single focus stop</Fragment>
+        </Card>
+
+        <Card title="No icon · with footer · href" href="#card-link-2">
+          Body slot — clickable variant without icon.
+          <Fragment slot="footer">Updated today</Fragment>
+        </Card>
+
+        <Card title="With icon · no footer · href" href="#card-link-3">
+          <Fragment slot="icon">
+            <svg
+              viewBox="0 0 24 24"
+              width="24"
+              height="24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+            </svg>
+          </Fragment>
+          Body slot — minimal clickable card with icon.
+        </Card>
+
+        <Card title="No icon · no footer · href" href="#card-link-4">
+          Body slot — leanest interactive shape.
+        </Card>
+
+        <Card href="#card-link-titleless">
+          Body slot — title-less + footer-less variant; renders cleanly per
+          Story §Failure modes.
+        </Card>
+      </div>
+      <p class="mt-3 text-caption text-ink-body">
+        Triggerable states (href variant): hover (border darkens),
+        focus-visible (Tab in).
+      </p>
+    </section>
+
+    {/* ============================ ACCORDION ============================= */}
+    <section id="accordion" class="mb-7" aria-labelledby="h-accordion">
+      <h2 id="h-accordion" class="mb-4">Accordion</h2>
+
+      <h3 class="mt-4 mb-2 text-h3">singleOpen (default) · closed initially</h3>
+      <Accordion class="rounded-card border border-border bg-surface px-3">
+        <AccordionItem question="What is the Umbrella Runtime?">
+          The single Node/Fastify container that handles Invocations for all
+          Tenants and all Agents. Opens this row closes any sibling.
+        </AccordionItem>
+        <AccordionItem question="Can I bring my own LLM provider?">
+          Yes — Provider Credentials are reserved in v1 and ungate in v2.
+        </AccordionItem>
+        <AccordionItem question="Is the platform multi-tenant?">
+          Yes. Data is partitioned by <code>tenant_id</code> across every
+          high-volume table.
+        </AccordionItem>
+      </Accordion>
+
+      <h3 class="mt-4 mb-2 text-h3">singleOpen · one open by default</h3>
+      <Accordion class="rounded-card border border-border bg-surface px-3">
+        <AccordionItem
+          question="What is the Umbrella Runtime?"
+          open
+        >
+          This item starts open. Click another to verify single-open enforces
+          siblings shut.
+        </AccordionItem>
+        <AccordionItem question="Can I bring my own LLM provider?">
+          Closed initially.
+        </AccordionItem>
+        <AccordionItem question="Is the platform multi-tenant?">
+          Closed initially.
+        </AccordionItem>
+      </Accordion>
+
+      <h3 class="mt-4 mb-2 text-h3">singleOpen=false · multiple-toggle mode</h3>
+      <Accordion
+        singleOpen={false}
+        class="rounded-card border border-border bg-surface px-3"
+      >
+        <AccordionItem question="First item — toggle freely">
+          Multiple items may stay open. Open another below.
+        </AccordionItem>
+        <AccordionItem question="Second item — also toggleable">
+          Stays open while the first is open.
+        </AccordionItem>
+        <AccordionItem question="Third item — independent">
+          No cross-item coordination.
+        </AccordionItem>
+      </Accordion>
+      <p class="mt-3 text-caption text-ink-body">
+        Expand/collapse motion respects <code>prefers-reduced-motion</code> —
+        OS-level reduce-motion users see an instant jump (global reset in
+        <code>global.css</code>). Triggerable: focus-visible (Tab to summary),
+        Enter / Space to activate.
+      </p>
+    </section>
+
+    {/* ========================= COMPARISON TABLE ========================= */}
+    <section
+      id="comparison-table"
+      class="mb-7"
+      aria-labelledby="h-comparison-table"
+    >
+      <h2 id="h-comparison-table" class="mb-4">ComparisonTable</h2>
+
+      <h3 class="mt-4 mb-2 text-h3">3-tier (Pricing) · one column highlighted</h3>
+      <ComparisonTable
+        caption="Plans and limits across Starter, Pro, and Enterprise tiers"
+        columns={pricingColumns}
+        rows={pricingRows}
+        class="rounded-card border border-border bg-surface p-3"
+      />
+
+      <h3 class="mt-4 mb-2 text-h3">4-generic (Comparison) · no highlight</h3>
+      <ComparisonTable
+        caption="TWAI versus build-your-own and competing vendors"
+        columns={comparisonColumns}
+        rows={comparisonRows}
+        class="rounded-card border border-border bg-surface p-3"
+      />
+      <p class="mt-3 text-caption text-ink-body">
+        Below <code>640px</code> the table re-renders as stacked row-cards;
+        table semantics (<code>role="table" / "row" / "cell"</code>) survive
+        the visual restyle. Long localized strings wrap inside cells without
+        column collapse — narrow the viewport to confirm.
+      </p>
+    </section>
+  </div>
+</Layout>
