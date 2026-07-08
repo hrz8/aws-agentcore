@@ -21,8 +21,8 @@ export default defineConfig(() => ({
     }),
     tanstackStart(),
     nitro({
-      preset: 'node-server',
-      serveStatic: true,
+      preset: 'aws-lambda',
+      awsLambda: { streaming: true },
     }),
     viteReact(),
     tailwindcss(),

@@ -23,7 +23,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 : "${REPO_YAML:=$REPO_ROOT/apps/agent/agentcore/agents.yaml}"
 
 if [[ -z "${BUCKET:-}" ]]; then
-  echo "Error: BUCKET env var required (S3 uploads bucket, e.g. demoagent-dev-309789829970)." >&2
+  echo "Error: BUCKET env var required (S3 uploads bucket, e.g. nd8-dev-309789829970)." >&2
   echo "       Get it from CDK outputs (UploadsBucketName)." >&2
   exit 1
 fi

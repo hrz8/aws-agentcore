@@ -26,10 +26,10 @@ export class UploadsBucket extends Construct {
     const stageLower = props.stage.toLowerCase();
     const accountId = stack.account;
 
-    const bucketName = `${props.namePrefix}-${stageLower}-${accountId}`;
+    const bucketName = `${props.namePrefix}-agent-${stageLower}-${accountId}`;
     // accountId is a CDK token at synth time, so length() on the assembled
     // name lies — check the literal prefix and reserve 12 for the account.
-    const literalLen = `${props.namePrefix}-${stageLower}-`.length;
+    const literalLen = `${props.namePrefix}-agent-${stageLower}-`.length;
     if (literalLen + 12 > 63) {
       throw new Error(
         `Bucket name would exceed 63 chars: literal prefix ${literalLen} + 12 (account id) > 63. namePrefix '${props.namePrefix}' too long.`,

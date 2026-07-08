@@ -2,13 +2,14 @@ import type { Message } from '@ag-ui/client';
 import { useAgent as useCopilotkitAgent, UseAgentUpdate } from '@copilotkit/react-core/v2';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { AGENT_URL as RUNTIME_URL } from '../env';
+import { AGENT_URL as DEFAULT_RUNTIME_URL } from '../env';
 import { getJson, HttpError } from './http';
 import { normalizeStoredMessage, projectTimeline, type TimelineItem } from './timeline';
 
 export interface UseAgentInput {
   threadId: string;
   onResetThread: () => void;
+  runtimeUrl?: string;
 }
 
 export interface UseAgentResult {
@@ -20,12 +21,13 @@ export interface UseAgentResult {
 }
 
 async function fetchThreadMessages(
+  runtimeUrl: string,
   threadId: string,
   signal: AbortSignal,
 ): Promise<Message[]> {
   try {
     const body = await getJson<{ messages?: unknown[] }>(
-      `${RUNTIME_URL}/threads/${encodeURIComponent(threadId)}/messages`,
+      `${runtimeUrl}/threads/${encodeURIComponent(threadId)}/messages`,
       { signal },
     );
     return (body.messages ?? []).map(normalizeStoredMessage) as Message[];
@@ -35,7 +37,7 @@ async function fetchThreadMessages(
   }
 }
 
-export function useAgent({ threadId, onResetThread }: UseAgentInput): UseAgentResult {
+export function useAgent({ threadId, onResetThread, runtimeUrl = DEFAULT_RUNTIME_URL }: UseAgentInput): UseAgentResult {
   const { agent } = useCopilotkitAgent({
     agentId: 'default',
     updates: [UseAgentUpdate.OnMessagesChanged, UseAgentUpdate.OnRunStatusChanged],
@@ -46,14 +48,14 @@ export function useAgent({ threadId, onResetThread }: UseAgentInput): UseAgentRe
   useEffect(() => {
     setFetchedMessages(null);
     const ac = new AbortController();
-    fetchThreadMessages(threadId, ac.signal)
+    fetchThreadMessages(runtimeUrl, threadId, ac.signal)
       .then(setFetchedMessages)
       .catch((err: unknown) => {
         if (err instanceof DOMException && err.name === 'AbortError') return;
         setError(err instanceof Error ? err.message : String(err));
       });
     return () => ac.abort();
-  }, [threadId]);
+  }, [threadId, runtimeUrl]);
 
   useEffect(() => {
     if (!fetchedMessages || fetchedMessages.length === 0) {

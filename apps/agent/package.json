@@ -15,8 +15,8 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/main.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "docker:build": "docker build --platform=linux/arm64 -t twai-agent-runtime:dev .",
-    "docker:run": "docker run --rm -p 8080:8080 --env-file .env twai-agent-runtime:dev"
+    "docker:build": "docker build --platform=linux/arm64 -t nd8-agent-runtime:dev .",
+    "docker:run": "docker run --rm -p 8080:8080 --env-file .env nd8-agent-runtime:dev"
   },
   "dependencies": {
     "@repo/kit": "workspace:*",

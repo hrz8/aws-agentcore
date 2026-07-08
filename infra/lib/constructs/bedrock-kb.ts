@@ -93,7 +93,7 @@ export class BedrockKnowledgeBase extends Construct {
     this.docsBucket = props.docsBucket;
 
     this.vectorBucket = new s3vectors.CfnVectorBucket(this, 'VectorBucket', {
-      vectorBucketName: `${baseName}-vec`,
+      vectorBucketName: `${props.namePrefix}-vec-${stageLower}-${accountId}`,
       encryptionConfiguration: { sseType: 'AES256' },
     });
     this.vectorBucket.applyRemovalPolicy(isProd ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY);

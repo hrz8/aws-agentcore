@@ -1,9 +1,9 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
 
-  "app_title": "AgentCore Dashboard",
-  "app_brand_mark": "TW",
-  "app_brand_word": "TWAI",
+  "app_title": "nd8 Dashboard",
+  "app_brand_mark": "nd8",
+  "app_brand_word": "nd8",
 
   "common_loading": "Loading…",
   "common_refresh": "Refresh",
@@ -68,7 +68,7 @@
   "agent_status_draft": "Draft",
 
   "try_out_label": "Try out",
-  "try_out_title": "Open this agent + version in the chat SPA",
+  "try_out_title": "Open this agent + version in the widget playground",
 
   "version_selector_placeholder": "Version",
   "version_live_tag": "live",

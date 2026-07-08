@@ -19,7 +19,7 @@ export type HttpOptions = {
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 export const DEFAULT_USER_AGENT =
-  'Mozilla/5.0 (compatible; twai/0.1; +https://github.com/trinitywizards)';
+  'Mozilla/5.0 (compatible; nd8/0.1; +https://github.com/trinitywizards)';
 
 async function send(method: string, url: string, opts: HttpOptions = {}): Promise<Response> {
   const timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;

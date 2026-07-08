@@ -1,8 +1,8 @@
 {
-  "name": "twai",
+  "name": "nd8",
   "version": "1.0.0",
   "private": true,
-  "description": "TWAI Monorepo",
+  "description": "nd8 Monorepo",
   "engines": {
     "node": ">=24"
   },

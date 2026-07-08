@@ -3,12 +3,13 @@ import * as React from 'react';
 
 import { m } from '#/paraglide/messages.js';
 import { Button } from '#/components/ui/button';
-import { FRONTEND_URL } from '#/shared/env';
+import { useRuntimeConfig } from '#/features/runtime';
 
 import { useCurrentScope } from '../hooks';
 
 export function TryOutButton() {
   const scope = useCurrentScope();
+  const { widgetDemoUrl } = useRuntimeConfig();
 
   const href = React.useMemo(() => {
     if (!scope) return null;
@@ -17,8 +18,8 @@ export function TryOutButton() {
       agent: scope.agentId,
       version: scope.agentVersion,
     });
-    return `${FRONTEND_URL}/?${params.toString()}`;
-  }, [scope]);
+    return `${widgetDemoUrl}?${params.toString()}`;
+  }, [scope, widgetDemoUrl]);
 
   if (!href) {
     return (

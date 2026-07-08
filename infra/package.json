@@ -14,7 +14,9 @@
     "typecheck": "tsc --noEmit",
     "cdk": "cdk",
     "synth": "cdk synth",
+    "predeploy:dev": "pnpm --filter dashboard build",
     "deploy:dev": "cdk deploy 'Dev/*' --require-approval never",
+    "predeploy:prod": "pnpm --filter dashboard build",
     "deploy:prod": "cdk deploy 'Prod/*' --require-approval never",
     "diff:dev": "cdk diff 'Dev/*'"
   },

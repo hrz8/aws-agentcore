@@ -5,10 +5,10 @@ import * as agentcore from 'aws-cdk-lib/aws-bedrockagentcore';
 import { CfnOutput, Duration } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 
-const MEMORY_NAME = 'DemoAgent';
-
 export type AgentCoreMemoryProps = {
   readonly stage: Stage;
+  readonly namePrefix: string;
+  readonly agentName: string;
   /** STM event retention in days (7–365). */
   readonly expirationDays?: number;
   /** Customer-managed KMS key; AWS-managed key used if omitted. */
@@ -25,7 +25,7 @@ export class AgentCoreMemory extends Construct {
   constructor(scope: Construct, id: string, props: AgentCoreMemoryProps) {
     super(scope, id);
 
-    const { stage, expirationDays, kmsKey } = props;
+    const { stage, namePrefix, agentName, expirationDays, kmsKey } = props;
     this.kmsKey = kmsKey;
 
     this.namespaceFacts = '/actor/{actorId}/facts';
@@ -33,8 +33,8 @@ export class AgentCoreMemory extends Construct {
     this.namespaceSummary = '/actor/{actorId}/session/{sessionId}/summary';
 
     this.memory = new agentcore.Memory(this, 'Memory', {
-      memoryName: `${MEMORY_NAME}_${stage.toLowerCase()}`,
-      description: `${MEMORY_NAME} memory (${stage})`,
+      memoryName: `${agentName}_${stage.toLowerCase()}`,
+      description: `${agentName} memory (${stage})`,
       expirationDuration: Duration.days(expirationDays ?? 90),
       kmsKey,
       memoryStrategies: [
@@ -53,18 +53,18 @@ export class AgentCoreMemory extends Construct {
       ],
     });
 
-    const exportPrefix = `${stage}-${MEMORY_NAME}`;
+    const exportPrefix = `${stage}-${namePrefix}`;
 
     new CfnOutput(this, 'MemoryId', {
       value: this.memory.memoryId,
-      description: `${MEMORY_NAME} AgentCore Memory ID`,
-      exportName: `${exportPrefix}-MemoryId`,
+      description: `${agentName} AgentCore Memory ID`,
+      exportName: `${exportPrefix}-AgentMemoryId`,
     });
 
     new CfnOutput(this, 'MemoryArn', {
       value: this.memory.memoryArn,
-      description: `${MEMORY_NAME} AgentCore Memory ARN`,
-      exportName: `${exportPrefix}-MemoryArn`,
+      description: `${agentName} AgentCore Memory ARN`,
+      exportName: `${exportPrefix}-AgentMemoryArn`,
     });
   }
 }

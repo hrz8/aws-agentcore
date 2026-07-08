@@ -11,6 +11,7 @@ import { type ReactNode } from 'react';
 
 import { ErrorBoundary } from '#/components/error-boundary';
 import { NotFoundPage } from '#/components/not-found-page';
+import { getRuntimeConfigServerFn } from '#/features/runtime';
 import { DEV } from '#/shared/env';
 import { DEFAULT_THEME, THEME_INIT_SCRIPT } from '#/shared/theme';
 import { directionFor, type Locale, DEFAULT_LOCALE } from '#/shared/i18n/locale';
@@ -24,13 +25,19 @@ export interface RootContext {
 
 export const Route = createRootRouteWithContext<RootContext>()({
   beforeLoad: () => ({ locale: DEFAULT_LOCALE }),
+  loader: () => getRuntimeConfigServerFn(),
   head: () => ({
     meta: [
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'TWAI Dashboard' },
+      { title: 'nd8 Dashboard' },
     ],
-    links: [{ rel: 'stylesheet', href: appCss }],
+    links: [
+      { rel: 'stylesheet', href: appCss },
+      { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/favicon-32x32.png' },
+      { rel: 'icon', type: 'image/png', sizes: '192x192', href: '/favicon-192x192.png' },
+      { rel: 'apple-touch-icon', sizes: '180x180', href: '/favicon-180x180.png' },
+    ],
     scripts: [{ children: THEME_INIT_SCRIPT }],
   }),
   notFoundComponent: NotFoundPage,

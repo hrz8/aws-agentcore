@@ -18,8 +18,8 @@ export type ThemeMode = (typeof THEME_MODE)[keyof typeof THEME_MODE];
 export const DEFAULT_THEME: ThemeName = 'savanna';
 export const DEFAULT_MODE: ThemeMode = THEME_MODE.DARK;
 
-export const THEME_STORAGE_KEY = 'twai_theme';
-export const MODE_STORAGE_KEY = 'twai_mode';
+export const THEME_STORAGE_KEY = 'nd8_theme';
+export const MODE_STORAGE_KEY = 'nd8_mode';
 
 export const THEME_INIT_SCRIPT = `(function(){try{
 var t=localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)});

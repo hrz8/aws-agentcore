@@ -5,12 +5,12 @@ import type { Stage } from './config.js';
 
 import { Stage as CdkStage } from 'aws-cdk-lib';
 
-import { DemoAgentcoreStack } from './stack.js';
+import { Nd8Stack } from './stack.js';
 
-export class DemoAgentcoreStage extends CdkStage {
+export class Nd8Stage extends CdkStage {
   constructor(scope: Construct, stage: Stage, props: StageProps) {
     super(scope, stage, props);
 
-    new DemoAgentcoreStack(this, { stage });
+    new Nd8Stack(this, { stage });
   }
 }

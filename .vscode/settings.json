@@ -1,0 +1,7 @@
+{
+  "files.exclude": {
+    "infra/**/*.js": true,
+    "infra/**/*.js.map": true,
+    "infra/**/*.d.ts": true
+  }
+}

@@ -11,8 +11,7 @@
   "main": ".output/server/index.mjs",
   "scripts": {
     "dev": "CHOKIDAR_USEPOLLING=true vite dev --port 5200",
-    "build": "vite build",
-    "start": "node .output/server/index.mjs",
+    "build": "vite build && node scripts/patch-tslib.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>nd8 Widget — Playground</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+        background: #f6f7f9;
+        color: #111;
+        min-height: 100vh;
+      }
+      .container {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 3rem 1.5rem 8rem;
+      }
+      h1 { font-size: 1.5rem; margin: 0 0 0.5rem; }
+      p { line-height: 1.5; color: #444; }
+      code {
+        background: #ececec;
+        padding: 0.1rem 0.35rem;
+        border-radius: 4px;
+        font-size: 0.9em;
+        font-family: ui-monospace, SFMono-Regular, monospace;
+      }
+      .card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 1rem 1.25rem;
+        margin: 1rem 0;
+      }
+      .field { margin-bottom: 0.75rem; }
+      .field:last-child { margin-bottom: 0; }
+      label {
+        display: block;
+        font-size: 0.8rem;
+        color: #555;
+        margin-bottom: 0.25rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+      }
+      select, input[type="text"], input[type="url"] {
+        width: 100%;
+        padding: 0.45rem 0.6rem;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        background: #fff;
+        box-sizing: border-box;
+      }
+      .agent-desc {
+        margin-top: 0.35rem;
+        font-size: 0.8rem;
+        color: #666;
+        min-height: 1.2em;
+      }
+      .kv {
+        display: grid;
+        grid-template-columns: 8rem 1fr;
+        gap: 0.25rem 1rem;
+        font-size: 0.85rem;
+      }
+      .kv dt { color: #666; }
+      .kv dd {
+        margin: 0;
+        font-family: ui-monospace, SFMono-Regular, monospace;
+        word-break: break-all;
+      }
+      .actions { display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap; }
+      button {
+        font-size: 0.85rem;
+        padding: 0.4rem 0.8rem;
+        border: 1px solid #ccc;
+        background: #fff;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      button:hover:not(:disabled) { background: #f2f2f2; }
+      button:disabled { opacity: 0.5; cursor: not-allowed; }
+      button.primary {
+        background: #111;
+        color: #fff;
+        border-color: #111;
+      }
+      button.primary:hover:not(:disabled) { background: #333; }
+      .banner {
+        padding: 0.5rem 0.85rem;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        margin: 0.75rem 0;
+      }
+      .banner--err { background: #fee; border: 1px solid #fcc; color: #900; }
+      .banner--info { background: #eef; border: 1px solid #cce; color: #226; }
+      .muted { color: #888; font-size: 0.78rem; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>nd8 Widget — Playground</h1>
+      <p>
+        Pick a tenant + agent, then the widget mounts against the selected scope. Values
+        can also be forced via query params — the same convention the SPA used:
+        <code>?tenant=…&amp;agent=…&amp;version=…&amp;agentUrl=…</code>.
+      </p>
+
+      <div id="banner"></div>
+
+      <div class="card">
+        <div class="field">
+          <label for="agent-select">Agent</label>
+          <select id="agent-select" disabled>
+            <option>Loading agents…</option>
+          </select>
+          <div id="agent-desc" class="agent-desc muted"></div>
+        </div>
+
+        <div class="field">
+          <label for="agent-url">Agent runtime URL</label>
+          <input id="agent-url" type="url" placeholder="http://localhost:7890/copilotkit" />
+        </div>
+
+        <div class="actions">
+          <button type="button" id="launch-btn" class="primary" disabled>Launch widget</button>
+          <button type="button" onclick="window.nd8 && window.nd8.open()">open()</button>
+          <button type="button" onclick="window.nd8 && window.nd8.close()">close()</button>
+          <button type="button" onclick="window.nd8 && window.nd8.toggle()">toggle()</button>
+          <button type="button" onclick="window.nd8 && window.nd8.newThread()">newThread()</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <strong>Active config</strong>
+        <dl class="kv" id="active-config">
+          <dt>—</dt><dd>(no widget mounted yet)</dd>
+        </dl>
+      </div>
+
+      <p class="muted">
+        Agent list is baked from <code>apps/agent/agentcore/agents.yaml</code> at build
+        time — refresh on next <code>widget-push</code>. Override at any time with
+        <code>window.nd8.setConfig({...})</code> or <code>window.nd8.destroy()</code>
+        followed by <code>window.nd8.init({...})</code>.
+      </p>
+    </div>
+
+    <script>
+      // Hand-maintained mirror of enabled agents in apps/agent/agentcore/agents.yaml.
+      // Edit here when a new agent ships — this is a demo/testing surface, not the
+      // authoritative source. UUIDs must match the yaml exactly.
+      var AGENTS = [
+        {
+          tenantId: '231ec442-974b-4933-bc70-b00755fbcfce',
+          tenantName: 'Trinity Wizards',
+          tenantSlug: 'trinitywizards',
+          agentId: 'afa4c5bb-e82a-4ba6-837e-ed92a53c6bfa',
+          agentSlug: 'weather',
+          agentVersion: 'v1',
+          description: 'Specialist weather assistant — forecasts, current conditions, temperature conversions',
+        },
+        {
+          tenantId: '231ec442-974b-4933-bc70-b00755fbcfce',
+          tenantName: 'Trinity Wizards',
+          tenantSlug: 'trinitywizards',
+          agentId: '14247887-331d-45bc-8e51-96b9582090da',
+          agentSlug: 'simple',
+          agentVersion: 'v1',
+          description: 'Demo agent with temperature conversion, KB search, and skills',
+        },
+        {
+          tenantId: 'c4a863db-886c-4390-a2dd-457806f4772e',
+          tenantName: 'Airborneo',
+          tenantSlug: 'airborneo',
+          agentId: '526421da-9f7b-47dc-b5fb-8bce9b495444',
+          agentSlug: 'customer-service',
+          agentVersion: 'v1',
+          description: 'Customer service assistant for Airborneo — general help and enquiries',
+        },
+      ];
+
+      (function () {
+        var DEFAULT_AGENT_URL = 'http://localhost:7890/copilotkit';
+        var STORAGE_KEY = 'nd8-widget-demo-selection';
+
+        var $select = document.getElementById('agent-select');
+        var $desc = document.getElementById('agent-desc');
+        var $url = document.getElementById('agent-url');
+        var $launch = document.getElementById('launch-btn');
+        var $banner = document.getElementById('banner');
+        var $config = document.getElementById('active-config');
+
+        var items = AGENTS;
+
+        var params = new URLSearchParams(window.location.search);
+        var qsTenant = params.get('tenant');
+        var qsAgent = params.get('agent');
+        var qsVersion = params.get('version');
+        var qsUrl = params.get('agentUrl');
+
+        function loadSaved() {
+          try {
+            var raw = localStorage.getItem(STORAGE_KEY);
+            return raw ? JSON.parse(raw) : null;
+          } catch (e) { return null; }
+        }
+
+        function saveSelection() {
+          var opt = $select.selectedOptions[0];
+          var value = opt && opt.value ? opt.value : null;
+          var url = ($url.value || '').trim();
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({ value: value, agentUrl: url }));
+          } catch (e) { /* quota / private mode — ignore */ }
+        }
+
+        // URL input: query param > saved value > default.
+        var saved = loadSaved();
+        $url.value = qsUrl || (saved && saved.agentUrl) || DEFAULT_AGENT_URL;
+
+        function setBanner(kind, text) {
+          if (!text) { $banner.innerHTML = ''; return; }
+          var div = document.createElement('div');
+          div.className = 'banner banner--' + kind;
+          div.textContent = text;
+          $banner.innerHTML = '';
+          $banner.appendChild(div);
+        }
+
+        function findItem(tenantId, agentId, version) {
+          for (var i = 0; i < items.length; i++) {
+            var it = items[i];
+            if (it.tenantId === tenantId && it.agentId === agentId && it.agentVersion === version) {
+              return it;
+            }
+          }
+          return null;
+        }
+
+        function optionValue(item) {
+          return item.tenantId + '|' + item.agentId + '|' + item.agentVersion;
+        }
+
+        function populateDropdown(selectedValue) {
+          $select.innerHTML = '';
+
+          if (items.length === 0) {
+            var opt = document.createElement('option');
+            opt.textContent = '(no enabled agents in catalog)';
+            $select.appendChild(opt);
+            $select.disabled = true;
+            $launch.disabled = true;
+            return;
+          }
+
+          var byTenant = {};
+          items.forEach(function (it) {
+            if (!byTenant[it.tenantId]) {
+              byTenant[it.tenantId] = { name: it.tenantName, slug: it.tenantSlug, agents: [] };
+            }
+            byTenant[it.tenantId].agents.push(it);
+          });
+
+          Object.keys(byTenant).forEach(function (tenantId) {
+            var t = byTenant[tenantId];
+            var group = document.createElement('optgroup');
+            group.label = t.name + '  (' + t.slug + ')';
+            t.agents.forEach(function (a) {
+              var opt = document.createElement('option');
+              opt.value = optionValue(a);
+              opt.textContent = a.agentSlug + '  ·  ' + a.agentVersion;
+              opt.dataset.description = a.description || '';
+              group.appendChild(opt);
+            });
+            $select.appendChild(group);
+          });
+
+          $select.disabled = false;
+          $launch.disabled = false;
+
+          if (selectedValue) {
+            $select.value = selectedValue;
+          }
+          onSelectChange();
+        }
+
+        function onSelectChange() {
+          var opt = $select.selectedOptions[0];
+          $desc.textContent = (opt && opt.dataset && opt.dataset.description) || '';
+          saveSelection();
+        }
+
+        function renderConfig(config) {
+          $config.innerHTML = '';
+          [
+            ['tenantId', config.tenantId],
+            ['agentId', config.agentId],
+            ['agentVersion', config.agentVersion],
+            ['agentUrl', config.agentUrl],
+          ].forEach(function (row) {
+            var dt = document.createElement('dt');
+            dt.textContent = row[0];
+            var dd = document.createElement('dd');
+            dd.textContent = row[1];
+            $config.appendChild(dt);
+            $config.appendChild(dd);
+          });
+        }
+
+        function mount(config) {
+          try {
+            if (window.nd8) {
+              window.nd8.destroy();
+              window.nd8.init(config);
+            } else {
+              // Fallback for pre-load: widget auto-inits on DOMContentLoaded.
+              window.nd8Config = config;
+            }
+            renderConfig(config);
+            saveSelection();
+            setBanner('info', 'Widget mounted. Click the bubble in the corner.');
+          } catch (err) {
+            setBanner('err', 'init failed: ' + (err && err.message || err));
+          }
+        }
+
+        function launchFromDropdown() {
+          var opt = $select.selectedOptions[0];
+          if (!opt || !opt.value) {
+            setBanner('err', 'Pick an agent first.');
+            return;
+          }
+          var parts = opt.value.split('|');
+          mount({
+            tenantId: parts[0],
+            agentId: parts[1],
+            agentVersion: parts[2],
+            agentUrl: ($url.value || DEFAULT_AGENT_URL).trim(),
+            title: 'nd8 Assistant',
+            position: 'bottom-right',
+            initiallyOpen: true,
+          });
+        }
+
+        $select.addEventListener('change', onSelectChange);
+        $url.addEventListener('change', saveSelection);
+        $launch.addEventListener('click', launchFromDropdown);
+
+        // Priority for the initial selection:
+        //   1. Query params  — ?tenant=…&agent=…&version=… (same convention as the SPA)
+        //   2. localStorage  — last picked in this browser
+        //   3. Empty         — user picks manually
+        if (qsTenant && qsAgent && qsVersion) {
+          var match = findItem(qsTenant, qsAgent, qsVersion);
+          if (match) {
+            populateDropdown(optionValue(match));
+            launchFromDropdown();
+          } else {
+            populateDropdown();
+            setBanner('info', 'Query-param scope not in catalog — launching with the raw values anyway.');
+            mount({
+              tenantId: qsTenant,
+              agentId: qsAgent,
+              agentVersion: qsVersion,
+              agentUrl: $url.value || DEFAULT_AGENT_URL,
+              title: 'nd8 Assistant',
+              position: 'bottom-right',
+              initiallyOpen: true,
+            });
+          }
+        } else if (saved && saved.value && findItemByValue(saved.value)) {
+          populateDropdown(saved.value);
+        } else {
+          populateDropdown();
+        }
+
+        function findItemByValue(value) {
+          var parts = value.split('|');
+          return findItem(parts[0], parts[1], parts[2]);
+        }
+      })();
+    </script>
+    <script src="/libs/chat-widget/latest/widget.min.js"></script>
+  </body>
+</html>
