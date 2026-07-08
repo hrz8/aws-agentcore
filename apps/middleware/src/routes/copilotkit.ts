@@ -62,36 +62,23 @@ export function createCopilotkitApp(runner: AgentRunner) {
   const copilotkitHandler = createCopilotHonoHandler({
     runtime,
     basePath: '/copilotkit',
-    ...(RUN_IN_LAMBDA ? { mode: 'single-route' as const } : {}),
     cors: { origin: () => null },
   });
 
   const app = new Hono();
 
-  if (RUN_IN_LAMBDA) {
-    app.get('/copilotkit/threads/:threadId/messages', async (c) => {
-      if (!hasMessageHistory(runner)) {
-        return c.json({ messages: [] });
-      }
-      try {
-        const messages = await runner.getThreadMessagesAsync(c.req.param('threadId'));
-        return c.json({ messages });
-      } catch (err) {
-        console.error('[copilotkit] getThreadMessagesAsync failed', err);
-        return c.json({ messages: [] });
-      }
-    });
-
-    app.get('/copilotkit/info', async (c) => {
-      const url = new URL(c.req.url);
-      const proxied = new Request(`${url.origin}/copilotkit`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ method: 'info' }),
-      });
-      return copilotkitHandler.fetch(proxied);
-    });
-  }
+  app.get('/copilotkit/threads/:threadId/messages', async (c) => {
+    if (!hasMessageHistory(runner)) {
+      return c.json({ messages: [] });
+    }
+    try {
+      const messages = await runner.getThreadMessagesAsync(c.req.param('threadId'));
+      return c.json({ messages });
+    } catch (err) {
+      console.error('[copilotkit] getThreadMessagesAsync failed', err);
+      return c.json({ messages: [] });
+    }
+  });
 
   app.route('/', copilotkitHandler);
   return app;

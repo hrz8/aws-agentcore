@@ -9,8 +9,8 @@ import { Stack } from 'aws-cdk-lib';
 import { Agentcore } from './constructs/agentcore.js';
 import { BedrockKnowledgeBase } from './constructs/bedrock-kb.js';
 import { Dashboard } from './constructs/dashboard.js';
+import { EdgeWaf } from './constructs/edge-waf.js';
 import { Middleware } from './constructs/middleware.js';
-import { MiddlewareWaf } from './constructs/middleware-waf.js';
 import { PublicAssets } from './constructs/public-assets.js';
 import { PublicAssetsBucket } from './constructs/public-assets-bucket.js';
 import { ThreadTable } from './constructs/thread-table.js';
@@ -44,7 +44,7 @@ export class Nd8Stack extends Stack {
   readonly websiteBucket: WebsiteBucket;
   readonly website: Website;
   readonly threadTable: ThreadTable;
-  readonly middlewareWaf: MiddlewareWaf;
+  readonly middlewareWaf: EdgeWaf;
   readonly middleware: Middleware;
 
   constructor(scope: Construct, props: Nd8StackProps) {
@@ -105,9 +105,11 @@ export class Nd8Stack extends Stack {
       stage,
     });
 
-    this.middlewareWaf = new MiddlewareWaf(this, 'MiddlewareWaf', {
+    this.middlewareWaf = new EdgeWaf(this, 'MiddlewareWaf', {
       namePrefix: NAME_PREFIX,
       stage,
+      componentName: 'middleware',
+      tenantRateLimit: 2000,
     });
 
     this.middleware = new Middleware(this, 'Middleware', {

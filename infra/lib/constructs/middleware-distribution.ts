@@ -6,11 +6,13 @@ import type * as lambda from 'aws-cdk-lib/aws-lambda';
 import { Construct } from 'constructs';
 
 import type { Stage } from '../config.js';
+import type { EdgeSecret } from './edge-secret.js';
 
 export type MiddlewareDistributionProps = {
   readonly namePrefix: string;
   readonly stage: Stage;
   readonly functionUrl: lambda.IFunctionUrl;
+  readonly edgeSecret: EdgeSecret;
   readonly domainNames?: string[];
   /** ACM certificate ARN. MUST live in us-east-1 (CloudFront requirement). */
   readonly certificateArn?: string;
@@ -24,7 +26,7 @@ export class MiddlewareDistribution extends Construct {
   constructor(scope: Construct, id: string, props: MiddlewareDistributionProps) {
     super(scope, id);
 
-    const { functionUrl, stage, namePrefix, domainNames, certificateArn, webAclId } = props;
+    const { functionUrl, stage, namePrefix, edgeSecret, domainNames, certificateArn, webAclId } = props;
 
     if ((domainNames?.length ?? 0) > 0 && !certificateArn) {
       throw new Error('MiddlewareDistribution: domainNames set but certificateArn missing (ACM cert must be in us-east-1)');
@@ -38,6 +40,7 @@ export class MiddlewareDistribution extends Construct {
       defaultBehavior: {
         origin: new origins.HttpOrigin(originDomain, {
           protocolPolicy: cloudfront.OriginProtocolPolicy.HTTPS_ONLY,
+          customHeaders: { 'x-origin-secret': edgeSecret.originSecretValue },
         }),
         allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
         cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,

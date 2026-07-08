@@ -41,6 +41,11 @@ const envSchema = z.object({
   WIDGET_DEMO_URL: z.url().default('http://localhost:4174/widget-demo.html'),
   MIDDLEWARE_URL: z.url().default('http://localhost:7890'),
 
+  RUN_IN_LAMBDA: z.union([z.string(), z.boolean()])
+    .transform((v) => v === true || v === 'true' || v === '1')
+    .default(false),
+  ORIGIN_SECRET: z.string().min(1).optional(),
+
   LOG_LEVEL: z.enum(LogLevel).optional(),
   LOG_PRETTY: z
     .string()
@@ -82,7 +87,13 @@ export const {
   REGISTRY_LOCAL_YAML_PATH,
   WIDGET_DEMO_URL,
   MIDDLEWARE_URL,
+  RUN_IN_LAMBDA,
+  ORIGIN_SECRET,
 } = ENV;
+
+if (RUN_IN_LAMBDA && !ORIGIN_SECRET) {
+  throw new Error('RUN_IN_LAMBDA=true but ORIGIN_SECRET is not set — check CDK env wiring');
+}
 
 export const KB_STAGE: KbStage | null = ENV.UPLOADS_BUCKET && ENV.KB_ID && ENV.KB_S3_DATA_SOURCE_ID
   ? {

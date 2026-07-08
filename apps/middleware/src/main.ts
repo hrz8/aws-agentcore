@@ -3,7 +3,7 @@ import { Hono } from 'hono';
 import { streamHandle } from 'hono/aws-lambda';
 import { cors } from 'hono/cors';
 
-import { AGENT_MODE, CORS_ORIGIN, PORT, RUN_IN_LAMBDA } from './config.js';
+import { AGENT_MODE, CORS_ORIGIN, ORIGIN_SECRET, PORT, RUN_IN_LAMBDA } from './config.js';
 import chatApp from './routes/chat.js';
 import { createCopilotkitApp } from './routes/copilotkit.js';
 import healthApp from './routes/health.js';
@@ -15,6 +15,18 @@ const runner = await createRunner();
 const copilotkitApp = createCopilotkitApp(runner);
 
 const app = new Hono();
+
+if (RUN_IN_LAMBDA) {
+  if (!ORIGIN_SECRET) {
+    throw new Error('RUN_IN_LAMBDA=true but ORIGIN_SECRET is not set — check CDK env wiring');
+  }
+  app.use('*', async (c, next) => {
+    if (c.req.header('x-origin-secret') !== ORIGIN_SECRET) {
+      return c.text('forbidden', 403);
+    }
+    return next();
+  });
+}
 
 // Lambda uses Function URL native CORS — gate this off to avoid duplicate headers.
 if (!RUN_IN_LAMBDA) {

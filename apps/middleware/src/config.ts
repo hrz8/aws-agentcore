@@ -50,6 +50,7 @@ const envSchema = z.object({
   RUN_IN_LAMBDA: z.union([z.string(), z.boolean()])
     .transform((v) => v === true || v === 'true' || v === '1')
     .default(false),
+  ORIGIN_SECRET: z.string().min(1).optional(),
   RUNNER_TYPE: z.enum(RunnerType).default(RunnerType.InMemory),
   THREAD_TABLE_NAME: z.string().optional(),
   SQLITE_DB_PATH: z.string().default('.data/threads.db'),
@@ -80,6 +81,7 @@ export const {
   REGISTRY_LOCAL_YAML_PATH,
   UPLOADS_BUCKET,
   RUN_IN_LAMBDA,
+  ORIGIN_SECRET,
   RUNNER_TYPE,
   THREAD_TABLE_NAME,
   SQLITE_DB_PATH,

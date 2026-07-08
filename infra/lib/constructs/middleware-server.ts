@@ -8,6 +8,7 @@ import { Construct } from 'constructs';
 
 import { Stages, type Stage } from '../config.js';
 import type { Agentcore } from './agentcore.js';
+import type { EdgeSecret } from './edge-secret.js';
 
 export type MiddlewareServerProps = {
   readonly namePrefix: string;
@@ -17,6 +18,7 @@ export type MiddlewareServerProps = {
   readonly threadTable: ddb.ITable;
   readonly agentcore: Agentcore;
   readonly threadTtlDays: number;
+  readonly edgeSecret: EdgeSecret;
 };
 
 export class MiddlewareServer extends Construct {
@@ -25,7 +27,7 @@ export class MiddlewareServer extends Construct {
   constructor(scope: Construct, id: string, props: MiddlewareServerProps) {
     super(scope, id);
 
-    const { namePrefix, stage, serverAssetPath, uploadsBucket, threadTable, agentcore, threadTtlDays } = props;
+    const { namePrefix, stage, serverAssetPath, uploadsBucket, threadTable, agentcore, threadTtlDays, edgeSecret } = props;
     const isProd = stage === Stages.Prod;
     const functionName = `${namePrefix}-middleware-${stage.toLowerCase()}`;
 
@@ -56,6 +58,7 @@ export class MiddlewareServer extends Construct {
         REGISTRY_SOURCE: 's3-yaml',
         REGISTRY_S3_KEY: 'registry/agents.yaml',
         UPLOADS_BUCKET: uploadsBucket.bucketName,
+        ORIGIN_SECRET: edgeSecret.originSecretValue,
       },
       logGroup,
     });

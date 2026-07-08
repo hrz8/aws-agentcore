@@ -7,6 +7,7 @@ import { Construct } from 'constructs';
 
 import { Stages, type Stage } from '../config.js';
 import type { BedrockKnowledgeBase } from './bedrock-kb.js';
+import type { EdgeSecret } from './edge-secret.js';
 
 export type DashboardServerProps = {
   readonly namePrefix: string;
@@ -16,6 +17,7 @@ export type DashboardServerProps = {
   readonly kb: BedrockKnowledgeBase;
   readonly widgetDemoUrl: string;
   readonly middlewareUrl: string;
+  readonly edgeSecret: EdgeSecret;
 };
 
 export class DashboardServer extends Construct {
@@ -24,13 +26,14 @@ export class DashboardServer extends Construct {
   constructor(scope: Construct, id: string, props: DashboardServerProps) {
     super(scope, id);
 
-    const { namePrefix, stage, serverAssetPath, uploadsBucket, kb, widgetDemoUrl, middlewareUrl } = props;
+    const { namePrefix, stage, serverAssetPath, uploadsBucket, kb, widgetDemoUrl, middlewareUrl, edgeSecret } = props;
     const stack = Stack.of(this);
     const stageLower = stage.toLowerCase();
     const isProd = stage === Stages.Prod;
 
     const environment: Record<string, string> = {
       NODE_ENV: 'production',
+      RUN_IN_LAMBDA: 'true',
       UPLOADS_BUCKET: uploadsBucket.bucketName,
       KB_ID: kb.kbId,
       KB_S3_DATA_SOURCE_ID: kb.s3DataSource.attrDataSourceId,
@@ -39,6 +42,7 @@ export class DashboardServer extends Construct {
       LOG_PRETTY: 'false',
       WIDGET_DEMO_URL: widgetDemoUrl,
       MIDDLEWARE_URL: middlewareUrl,
+      ORIGIN_SECRET: edgeSecret.originSecretValue,
     };
     if (kb.webDataSource) {
       environment.KB_WEB_DATA_SOURCE_ID = kb.webDataSource.attrDataSourceId;

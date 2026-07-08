@@ -4,6 +4,7 @@ import { Construct } from 'constructs';
 
 import type { Stage } from '../config.js';
 import type { Agentcore } from './agentcore.js';
+import { EdgeSecret } from './edge-secret.js';
 import { MiddlewareDistribution } from './middleware-distribution.js';
 import { MiddlewareFunctionUrl } from './middleware-function-url.js';
 import { MiddlewareServer } from './middleware-server.js';
@@ -29,10 +30,17 @@ export class Middleware extends Construct {
   readonly server: MiddlewareServer;
   readonly functionUrl: MiddlewareFunctionUrl;
   readonly distribution: MiddlewareDistribution;
+  readonly edgeSecret: EdgeSecret;
   readonly url: string;
 
   constructor(scope: Construct, id: string, props: MiddlewareProps) {
     super(scope, id);
+
+    this.edgeSecret = new EdgeSecret(this, 'EdgeSecret', {
+      namePrefix: props.namePrefix,
+      stage: props.stage,
+      componentName: 'middleware',
+    });
 
     this.server = new MiddlewareServer(this, 'Server', {
       namePrefix: props.namePrefix,
@@ -42,6 +50,7 @@ export class Middleware extends Construct {
       threadTable: props.threadTable,
       agentcore: props.agentcore,
       threadTtlDays: props.threadTtlDays,
+      edgeSecret: this.edgeSecret,
     });
 
     this.functionUrl = new MiddlewareFunctionUrl(this, 'FunctionUrl', {
@@ -55,6 +64,7 @@ export class Middleware extends Construct {
       namePrefix: props.namePrefix,
       stage: props.stage,
       functionUrl: this.functionUrl.functionUrl,
+      edgeSecret: this.edgeSecret,
       domainNames: props.domainNames,
       certificateArn: props.certificateArn,
       webAclId: props.webAclId,
