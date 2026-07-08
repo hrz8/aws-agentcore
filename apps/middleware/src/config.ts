@@ -15,6 +15,14 @@ export const RegistrySource = {
 } as const;
 export type RegistrySource = typeof RegistrySource[keyof typeof RegistrySource];
 
+export const RunnerType = {
+  InMemory: 'in-memory',
+  Sqlite: 'sqlite',
+  DynamoDB: 'dynamodb',
+  S3: 's3',
+} as const;
+export type RunnerType = typeof RunnerType[keyof typeof RunnerType];
+
 const envSchema = z.object({
   PORT: z.union([z.string(), z.number()])
     .transform((v) => Number.parseInt(String(v), 10))
@@ -36,9 +44,23 @@ const envSchema = z.object({
   REGISTRY_S3_KEY: z.string().min(1).default('registry.yaml'),
   REGISTRY_DB_URL: z.string().optional(),
   UPLOADS_BUCKET: z.string().optional(),
+
+  RUN_IN_LAMBDA: z.union([z.string(), z.boolean()])
+    .transform((v) => v === true || v === 'true' || v === '1')
+    .default(false),
+  RUNNER_TYPE: z.enum(RunnerType).default(RunnerType.InMemory),
+  THREAD_TABLE_NAME: z.string().optional(),
+  SQLITE_DB_PATH: z.string().default('.data/threads.db'),
+  THREAD_TTL_DAYS: z.union([z.string(), z.number()])
+    .transform((v) => Number.parseInt(String(v), 10))
+    .refine((n) => Number.isFinite(n) && n > 0, 'THREAD_TTL_DAYS must be a positive integer')
+    .default(30),
 }).transform((env) => ({
   ...env,
   COPILOTKIT_UPSTREAM_URL: env.COPILOTKIT_UPSTREAM_URL ?? `http://localhost:${env.PORT}/chat`,
+  RUNNER_TYPE: env.RUN_IN_LAMBDA && env.RUNNER_TYPE === RunnerType.InMemory
+    ? RunnerType.DynamoDB
+    : env.RUNNER_TYPE,
 }));
 
 export const {
@@ -54,4 +76,9 @@ export const {
   REGISTRY_S3_KEY,
   REGISTRY_DB_URL,
   UPLOADS_BUCKET,
+  RUN_IN_LAMBDA,
+  RUNNER_TYPE,
+  THREAD_TABLE_NAME,
+  SQLITE_DB_PATH,
+  THREAD_TTL_DAYS,
 } = Object.freeze(envSchema.parse(process.env));

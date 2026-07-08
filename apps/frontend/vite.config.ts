@@ -1,28 +1,10 @@
-import { copyFileSync, existsSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import react from '@vitejs/plugin-react';
-import { defineConfig, type PluginOption } from 'vite';
+import { defineConfig } from 'vite';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-
-// Mirrors widget.min.js/widget.js under the CDN's URL path so a static
-// server rooted at dist-widget/ resolves absolute paths the same way.
-function cdnLayoutMirror(fileName: string): PluginOption {
-  return {
-    name: 'nd8-cdn-layout-mirror',
-    apply: 'build',
-    closeBundle() {
-      const outDir = resolve(__dirname, 'dist-widget');
-      const nestedDir = resolve(outDir, 'libs/chat-widget/latest');
-      const src = resolve(outDir, fileName);
-      if (!existsSync(src)) return;
-      mkdirSync(nestedDir, { recursive: true });
-      copyFileSync(src, resolve(nestedDir, fileName));
-    },
-  };
-}
 
 export default defineConfig(({ mode }) => {
   const isWidgetMin = mode === 'widget';
@@ -42,8 +24,7 @@ export default defineConfig(({ mode }) => {
   const streamdownStub = resolve(__dirname, 'src/widget/shims/streamdown.tsx');
 
   return {
-    plugins: [react(), cdnLayoutMirror(outFile)],
-    publicDir: resolve(__dirname, 'widget-public'),
+    plugins: [react()],
     resolve: {
       alias: [
         { find: /^streamdown$/, replacement: streamdownStub },
@@ -60,7 +41,9 @@ export default defineConfig(({ mode }) => {
       'process.env': '({})',
     },
     build: {
-      outDir: 'dist-widget',
+      // Emit directly into the public-files bucket-mirror layout. min-mode
+      // (which runs first per package.json) wipes the dir; unmin adds alongside.
+      outDir: resolve(__dirname, '..', 'public-files', 'libs', 'chat-widget', 'latest'),
       emptyOutDir: isWidgetMin,
       cssCodeSplit: false,
       minify: isWidgetMin,

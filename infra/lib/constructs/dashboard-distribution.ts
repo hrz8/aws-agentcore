@@ -42,6 +42,7 @@ export class DashboardDistribution extends Construct {
       additionalBehaviors: {
         '/assets/*': staticBehavior,
         '/favicon.ico': staticBehavior,
+        '/favicon-*.png': staticBehavior,
       },
       httpVersion: cloudfront.HttpVersion.HTTP3,
       priceClass: cloudfront.PriceClass.PRICE_CLASS_100,

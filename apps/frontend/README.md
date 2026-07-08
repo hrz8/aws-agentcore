@@ -57,10 +57,16 @@ window.nd8.init(newConfigObject);   // programmatic mount, alternative to window
 Interactive playground with a live agent picker:
 <https://files.nd8.ai/widget-demo.html> (basic-auth).
 
-## Local dev
+## Dev
 
 ```bash
-nvm use && pnpm install
-pnpm build:widget     # → dist-widget/widget.min.js + widget.js
-pnpm preview:widget   # serve dist-widget/ on localhost:4174
+pnpm --filter frontend dev              # SPA → localhost:3456
+pnpm --filter frontend build:widget     # build only
+pnpm --filter frontend preview:widget   # build + playground → localhost:4174
+```
+
+## Deploy
+
+```bash
+./scripts/files-push.sh [Dev|Prod]      # builds + pushes apps/public-files/ to the bucket
 ```

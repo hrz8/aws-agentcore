@@ -29,6 +29,9 @@
   "pnpm": {
     "overrides": {
       "@ag-ui/core": "0.0.57"
-    }
+    },
+    "onlyBuiltDependencies": [
+      "better-sqlite3"
+    ]
   }
 }

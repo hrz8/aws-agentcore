@@ -1,15 +1,13 @@
 import { randomUUID } from 'node:crypto';
-import { Readable } from 'node:stream';
-import { Router, type Request, type Response } from 'express';
-
 import { composeActorId, composeRuntimeSessionId } from '@repo/kit/identity';
 import { isLiveAlias, resolveAgentWithLive } from '@repo/registry';
+import { Hono } from 'hono';
 
 import { createInvoker } from '../agents/index.js';
 import { getRegistry } from '../registry.js';
 import { readScopeFromHeaders } from '../utils/scope.js';
 
-const router = Router();
+const app = new Hono();
 const invoker = createInvoker();
 
 function extractThreadId(body: unknown): string {
@@ -25,15 +23,25 @@ function extractThreadId(body: unknown): string {
   return randomUUID();
 }
 
-router.post('/chat', async (req: Request, res: Response) => {
+export type ChatHeaders = {
+  'x-tenant-id'?: string;
+  'x-agent-id'?: string;
+  'x-agent-version'?: string;
+  'x-actor-id'?: string;
+};
+
+export async function handleChatRequest(input: {
+  headers: ChatHeaders;
+  body: unknown;
+  signal?: AbortSignal;
+}): Promise<Response> {
   const scoped = readScopeFromHeaders({
-    tenantId: req.header('x-tenant-id'),
-    agentId: req.header('x-agent-id'),
-    agentVersion: req.header('x-agent-version'),
+    tenantId: input.headers['x-tenant-id'],
+    agentId: input.headers['x-agent-id'],
+    agentVersion: input.headers['x-agent-version'],
   });
   if (!scoped.ok) {
-    res.status(scoped.status).json({ error: scoped.error });
-    return;
+    return Response.json({ error: scoped.error }, { status: scoped.status });
   }
   const { tenantId, agentId, agentVersion } = scoped.scope;
 
@@ -44,34 +52,36 @@ router.post('/chat', async (req: Request, res: Response) => {
       await registry.refresh();
       const def = await resolveAgentWithLive(registry, tenantId, agentId, 'live');
       if (!def) {
-        res.status(404).json({
-          error: `no enabled version for agent ${agentId} in tenant ${tenantId}`,
-        });
-        return;
+        return Response.json(
+          { error: `no enabled version for agent ${agentId} in tenant ${tenantId}` },
+          { status: 404 },
+        );
       }
       resolvedVersion = def.version;
     } catch (err) {
-      res.status(500).json({
-        error: 'live version resolution failed',
-        detail: err instanceof Error ? err.message : String(err),
-      });
-      return;
+      return Response.json(
+        {
+          error: 'live version resolution failed',
+          detail: err instanceof Error ? err.message : String(err),
+        },
+        { status: 500 },
+      );
     }
   } else {
     resolvedVersion = agentVersion;
   }
 
-  const rawActor = req.header('x-actor-id');
+  const rawActor = input.headers['x-actor-id'];
   const actorId = composeActorId(tenantId, rawActor);
-  const threadId = extractThreadId(req.body);
+  const body = input.body ?? {};
+  const threadId = extractThreadId(body);
   const runtimeSessionId = composeRuntimeSessionId({
     tenantId, agentId, agentVersion: resolvedVersion, rawActor, threadId,
   });
 
-  if (typeof req.body === 'object' && req.body !== null) {
-    const body = req.body as { forwardedProps?: Record<string, unknown> };
-    body.forwardedProps = {
-      ...body.forwardedProps,
+  if (typeof body === 'object' && body !== null) {
+    (body as { forwardedProps?: Record<string, unknown> }).forwardedProps = {
+      ...(body as { forwardedProps?: Record<string, unknown> }).forwardedProps,
       tenantId,
       agentId,
       agentVersion: resolvedVersion,
@@ -79,36 +89,43 @@ router.post('/chat', async (req: Request, res: Response) => {
     };
   }
 
-  const ac = new AbortController();
-  res.on('close', () => {
-    if (!res.writableFinished) ac.abort();
-  });
-
-  let upstream: globalThis.Response;
+  let upstream: Response;
   try {
     upstream = await invoker.invoke({
-      body: req.body,
+      body,
       sessionId: runtimeSessionId,
-      signal: ac.signal,
+      signal: input.signal,
     });
   } catch (err) {
-    res.status(502).json({
-      error: 'agent invocation failed',
-      detail: err instanceof Error ? err.message : String(err),
-    });
-    return;
+    return Response.json(
+      {
+        error: 'agent invocation failed',
+        detail: err instanceof Error ? err.message : String(err),
+      },
+      { status: 502 },
+    );
   }
 
-  res.status(upstream.status);
-  const contentType = upstream.headers.get('content-type');
-  if (contentType) res.setHeader('content-type', contentType);
+  return new Response(upstream.body, {
+    status: upstream.status,
+    headers: {
+      'content-type': upstream.headers.get('content-type') ?? 'text/event-stream',
+    },
+  });
+}
 
-  if (!upstream.body) {
-    res.end();
-    return;
-  }
-
-  Readable.fromWeb(upstream.body as import('node:stream/web').ReadableStream).pipe(res);
+app.post('/chat', async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  return handleChatRequest({
+    headers: {
+      'x-tenant-id': c.req.header('x-tenant-id'),
+      'x-agent-id': c.req.header('x-agent-id'),
+      'x-agent-version': c.req.header('x-agent-version'),
+      'x-actor-id': c.req.header('x-actor-id'),
+    },
+    body,
+    signal: c.req.raw.signal,
+  });
 });
 
-export default router;
+export default app;

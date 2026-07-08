@@ -17,6 +17,7 @@ export type DashboardProps = {
   readonly uploadsBucket: s3.IBucket;
   readonly kb: BedrockKnowledgeBase;
   readonly widgetDemoUrl: string;
+  readonly middlewareUrl: string;
 };
 
 export class Dashboard extends Construct {
@@ -40,6 +41,7 @@ export class Dashboard extends Construct {
       uploadsBucket: props.uploadsBucket,
       kb: props.kb,
       widgetDemoUrl: props.widgetDemoUrl,
+      middlewareUrl: props.middlewareUrl,
     });
 
     this.api = new DashboardApi(this, 'Api', {

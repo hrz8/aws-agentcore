@@ -13,7 +13,7 @@
     "build": "tsc -b && vite build",
     "build:widget": "tsc -b && vite build --mode widget && vite build --mode widget-unmin",
     "preview": "vite preview",
-    "preview:widget": "pnpm build:widget && pnpm dlx serve dist-widget -l 4174",
+    "preview:widget": "pnpm build:widget && pnpm dlx serve ../public-files -l 4174",
     "typecheck": "tsc -b --noEmit"
   },
   "dependencies": {

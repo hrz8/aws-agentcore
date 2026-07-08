@@ -37,6 +37,7 @@ const envSchema = z.object({
   REGISTRY_S3_KEY: z.string().min(1).default('registry/agents.yaml'),
   REGISTRY_DB_URL: z.string().min(1).optional(),
   WIDGET_DEMO_URL: z.url().default('http://localhost:4174/widget-demo.html'),
+  MIDDLEWARE_URL: z.url().default('http://localhost:7890'),
 
   LOG_LEVEL: z.enum(LogLevel).optional(),
   LOG_PRETTY: z
@@ -77,6 +78,7 @@ export const {
   REGISTRY_S3_KEY,
   REGISTRY_DB_URL,
   WIDGET_DEMO_URL,
+  MIDDLEWARE_URL,
 } = ENV;
 
 export const KB_STAGE: KbStage | null = ENV.UPLOADS_BUCKET && ENV.KB_ID && ENV.KB_S3_DATA_SOURCE_ID

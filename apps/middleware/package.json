@@ -12,6 +12,7 @@
   "scripts": {
     "dev": "tsx watch --env-file=.env src/main.ts",
     "build": "tsc -p tsconfig.json",
+    "build:lambda": "tsx scripts/build-lambda.ts",
     "start": "node dist/main.js",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
@@ -20,17 +21,19 @@
     "@repo/registry": "workspace:*",
     "@ag-ui/client": "0.0.57",
     "@copilotkit/runtime": "1.61.1",
-    "cors": "catalog:",
+    "@hono/node-server": "^2.0.8",
+    "better-sqlite3": "^12.11.1",
     "dotenv": "catalog:",
-    "express": "catalog:",
+    "hono": "^4.12.27",
+    "rxjs": "7.8.1",
     "uuid": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
-    "@types/cors": "catalog:",
-    "@types/express": "catalog:",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "catalog:",
+    "esbuild": "^0.28.1",
     "tsx": "catalog:",
     "typescript": "catalog:"
   }

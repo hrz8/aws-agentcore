@@ -36,6 +36,10 @@
       "types": "./dist/aws/bedrock-runtime.server.d.ts",
       "default": "./dist/aws/bedrock-runtime.server.js"
     },
+    "./aws/dynamodb": {
+      "types": "./dist/aws/dynamodb.server.d.ts",
+      "default": "./dist/aws/dynamodb.server.js"
+    },
     "./aws/sigv4": {
       "types": "./dist/aws/sigv4.server.d.ts",
       "default": "./dist/aws/sigv4.server.js"
@@ -66,8 +70,10 @@
     "@aws-crypto/sha256-js": "catalog:",
     "@aws-sdk/client-bedrock-agent": "catalog:",
     "@aws-sdk/client-bedrock-agent-runtime": "catalog:",
+    "@aws-sdk/client-dynamodb": "catalog:",
     "@aws-sdk/client-s3": "catalog:",
     "@aws-sdk/credential-providers": "catalog:",
+    "@aws-sdk/lib-dynamodb": "catalog:",
     "@aws-sdk/s3-request-presigner": "catalog:",
     "@smithy/protocol-http": "catalog:",
     "@smithy/signature-v4": "catalog:",

@@ -8,34 +8,36 @@ minimumReleaseAgeStrict: true
 
 catalog:
   "@aws-crypto/sha256-js": ^5.2.0
-  "@aws-sdk/client-bedrock-agent": ^3.1075.0
   "@aws-sdk/client-bedrock-agent-runtime": ^3.1075.0
+  "@aws-sdk/client-bedrock-agent": ^3.1075.0
+  "@aws-sdk/client-dynamodb": ^3.1075.0
   "@aws-sdk/client-s3": ^3.1075.0
   "@aws-sdk/credential-providers": ^3.1075.0
+  "@aws-sdk/lib-dynamodb": ^3.1075.0
   "@aws-sdk/s3-request-presigner": ^3.1075.0
   "@smithy/protocol-http": ^5.5.1
   "@smithy/signature-v4": ^5.5.1
+  "@testing-library/jest-dom": ^7.0.0
+  "@testing-library/react": ^17.0.0
   "@types/cors": ^2.8.19
   "@types/express": ^5.0.6
   "@types/node": ^25.8.0
-  "@types/react": ^19.2.0
   "@types/react-dom": ^19.2.0
-  aws-cdk: 2.1128.1
+  "@types/react": ^19.2.0
+  "@vitest/coverage-v8": ^4.1.0
   aws-cdk-lib: 2.260.0
+  aws-cdk: 2.1128.1
   cors: ^2.8.6
   dotenv: ^17.3.1
   express: ^5.2.1
-  react: ^19.2.0
+  happy-dom: ^20.10.0
+  pino-pretty: ^13.1.0
+  pino: ^10.3.0
   react-dom: ^19.2.0
+  react: ^19.2.0
   tsx: ^4.21.0
   typescript: 6.0.3
-  pino: ^10.3.0
-  pino-pretty: ^13.1.0
   uuid: ^13.0.0
   vitest: ^4.1.0
-  "@vitest/coverage-v8": ^4.1.0
-  happy-dom: ^20.10.0
-  "@testing-library/react": ^17.0.0
-  "@testing-library/jest-dom": ^7.0.0
   yaml: ^2.9.0
   zod: ^4.4.3

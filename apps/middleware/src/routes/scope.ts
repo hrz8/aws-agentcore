@@ -1,11 +1,11 @@
 import { isUuid } from '@repo/kit/identity';
 import { resolveAgentWithLive } from '@repo/registry';
-import { Router } from 'express';
+import { Hono } from 'hono';
 import { z } from 'zod';
 
 import { getRegistry } from '../registry.js';
 
-const router = Router();
+const app = new Hono();
 
 const scopeQuerySchema = z.object({
   tenant: z.string().refine(isUuid, 'tenant must be a UUID'),
@@ -13,13 +13,13 @@ const scopeQuerySchema = z.object({
   version: z.string().min(1, 'version is required'),
 });
 
-router.get('/scope', async (req, res) => {
-  const parsed = scopeQuerySchema.safeParse(req.query);
+app.get('/scope', async (c) => {
+  const parsed = scopeQuerySchema.safeParse(Object.fromEntries(new URL(c.req.url).searchParams));
   if (!parsed.success) {
-    res.status(400).json({
-      error: parsed.error.issues[0]?.message ?? 'invalid scope query params',
-    });
-    return;
+    return c.json(
+      { error: parsed.error.issues[0]?.message ?? 'invalid scope query params' },
+      400,
+    );
   }
   const { tenant: tenantId, agent: agentId, version } = parsed.data;
 
@@ -28,15 +28,13 @@ router.get('/scope', async (req, res) => {
     const tenants = await registry.tenants.list();
     const tenant = tenants.find((t) => t.tenantId === tenantId);
     if (!tenant) {
-      res.status(404).json({ error: 'tenant not found' });
-      return;
+      return c.json({ error: 'tenant not found' }, 404);
     }
     const agent = await resolveAgentWithLive(registry, tenantId, agentId, version);
     if (!agent) {
-      res.status(404).json({ error: 'agent not found' });
-      return;
+      return c.json({ error: 'agent not found' }, 404);
     }
-    res.json({
+    return c.json({
       tenantId,
       tenantSlug: tenant.tenantSlug,
       tenantName: tenant.tenantName,
@@ -46,8 +44,8 @@ router.get('/scope', async (req, res) => {
     });
   } catch (err) {
     console.error('[middleware] /scope failed', err);
-    res.status(500).json({ error: 'scope lookup failed' });
+    return c.json({ error: 'scope lookup failed' }, 500);
   }
 });
 
-export default router;
+export default app;

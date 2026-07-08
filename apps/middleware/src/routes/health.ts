@@ -1,11 +1,7 @@
-import { Router } from 'express';
+import { Hono } from 'hono';
 
-const router = Router();
+const app = new Hono();
 
-router.get('/healthz', (_req, res) => {
-  res.json({
-    status: 'ok',
-  });
-});
+app.get('/healthz', (c) => c.json({ status: 'ok' }));
 
-export default router;
+export default app;

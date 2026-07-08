@@ -9,7 +9,7 @@ import { useCurrentScope } from '../hooks';
 
 export function TryOutButton() {
   const scope = useCurrentScope();
-  const { widgetDemoUrl } = useRuntimeConfig();
+  const { widgetDemoUrl, middlewareUrl } = useRuntimeConfig();
 
   const href = React.useMemo(() => {
     if (!scope) return null;
@@ -17,9 +17,10 @@ export function TryOutButton() {
       tenant: scope.tenantId,
       agent: scope.agentId,
       version: scope.agentVersion,
+      agentUrl: `${middlewareUrl}/copilotkit`,
     });
     return `${widgetDemoUrl}?${params.toString()}`;
-  }, [scope, widgetDemoUrl]);
+  }, [scope, widgetDemoUrl, middlewareUrl]);
 
   if (!href) {
     return (
